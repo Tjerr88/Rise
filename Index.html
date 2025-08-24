@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>EverStrong — Rise</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0b0f19"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root { color-scheme: light dark; }
+    html,body { height: 100%; }
+    body {
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .btn { border-radius:.9rem; padding:.85rem 1rem; }
+    .btn-sm { border-radius:.7rem; padding:.6rem .8rem; font-size:.95rem; }
+    .safe { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
+  <div id="root" class="safe py-3"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* ============== Storage & Utils ============== */
+    function lsGet(k, f){ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): f; } catch(e){ return f; } }
+    function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+
+    function fmtHMS(secs){
+      const s=Math.max(0,Math.floor(secs));
+      const hh=('0'+Math.floor(s/3600)).slice(-2);
+      const mm=('0'+Math.floor((s%3600)/60)).slice(-2);
+      const ss=('0'+(s%60)).slice(-2);
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    // Smart list renderer met support voor witregels (lege string)
+    function renderSmartList(lines){
+      if(!lines) return null;
+      return (
+        <div className="space-y-1">
+          {lines.map((t,i)=>(
+            (String(t).trim()==="")
+              ? <div key={i} className="h-2" />
+              : <p key={i} className={String(t).startsWith("  ") ? "pl-4" : ""}>{t}</p>
+          ))}
+        </div>
+      );
+    }
+
+    function CalmCard({ title, subtitle, headerRight, children, footer }) {
+      return (
+        <section className="rounded-xl border border-black/10 dark:border-white/10">
+          {(title || subtitle || headerRight) && (
+            <div className="px-3 pt-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  {title && <h2 className="text-lg font-semibold">{title}</h2>}
+                  {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
+                </div>
+                {headerRight && <div className="pt-1">{headerRight}</div>}
+              </div>
+            </div>
+          )}
+          <div className="px-3 py-3">{children}</div>
+          {footer && <div className="px-3 pb-3">{footer}</div>}
+        </section>
+      );
+    }
+
+    function Timer({ elapsed, setElapsed, running, setRunning }) {
+      const ref=useRef(null);
+      useEffect(()=>{
+        if(running){ ref.current=setInterval(()=>setElapsed(t=>t+1),1000); }
+        else if(ref.current){ clearInterval(ref.current); ref.current=null; }
+        return ()=>{ if(ref.current){ clearInterval(ref.current); ref.current=null; } };
+      },[running,setElapsed]);
+      return (
+        <div>
+          <p className="text-2xl font-mono text-center">{fmtHMS(elapsed)}</p>
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            <button className="btn bg-green-600" onClick={()=>setRunning(true)}>Start</button>
+            <button className="btn bg-yellow-500 text-black" onClick={()=>setRunning(false)}>Stop</button>
+            <button className="btn bg-gray-600" onClick={()=>{ setElapsed(0); setRunning(false); }}>Reset</button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ============== Rise Generator (deterministic per dag) ============== */
+    const RISE_FORMAT_WEIGHTS = {
+      'Single Bell (5 - 7 reps @ Medium)': 30,
+      'Rep Ladder (1-2-3-4-5 @ Medium)': 25,
+      'Weight Ladder (5, 3, 2+ Reps @ Light, Medium, Heavy)': 20,
+      'Double Bell (5 - 7 Reps @ 2x Light)': 12,
+      'Timed (20s Max Reps @ Light)': 5,
+      'Uneven Bell (5 - 7 Reps @ Medium and Light)': 8
+    };
+    const RISE_FINISHER_FORMAT_WEIGHTS = {
+      'Single Bell (10 - 20 @ Medium)': 30,
+      'Rep Ladder (5-10-15-20 @ Medium)': 25,
+      'Weight Ladder (10, 10, 5+ @ Light, Medium and Heavy)': 20,
+      'Double Bell (2-4-6-(8-10) @ 2x Light)': 12,
+      'Uneven Weight (5 - 10 @ Light + Medium)': 8,
+      'Timed (20s max reps, 40s rest @ Medium)': 5
+    };
+    const RISE_FINISHER_A = ['Swing', 'Snatch', 'High Pull'];
+    const RISE_FINISHER_B = ['Push Press', 'Push Jerk', 'Clean & Jerk'];
+    const RISE_PATTERNS = {
+      'Squat': ['Front Squat','Hack Squat','Cossack Squat','B-Stance Goblet Squat','Step Up','Pistol Squat'],
+      'Pull': ['Tactical Pull Up','Chin Up','Small Row','Wide Row','Dead Clean','Low Pull Snatch'],
+      'Hinge': ['Deadstop Swing','Sumo Deadlift','Side Step Swing','B-Stance Goodmorning','Single Leg Deadlift','Single Leg Glute Bridge'],
+      'Push': ['Military Press','Half Kneeling Press','Floor Press','Power Push Up','Push Press','Push Jerk'],
+      'Lunge': ['Front Lunge','Reverse Lunge','Side Lunge','Curtsy Lunge','Tactical Lunge','Athletic Lunge'],
+      'Rotation': ['Half Kneeling Rotation','Get Up Sit Up','Windmill','Half Kneeling Windmill','Bent Press','Russian Twist'],
+      'Anti-Rotation': ['Suitcase Deadlift','Plank Pull Through','Half Kneeling Lift','Renegade Row','Elevated Push Up','Bottom Up Squat'],
+      'Loaded Carry': ['Suitcase Carry','Front Rack Carry','Overhead Carry','Bottom Up Carry','Bear Crawl','Cook Drill']
+    };
+
+    // Oefeningen die bij Double/Uneven als "single-bell only" gemarkeerd moeten worden
+    const SINGLE_BELL_ONLY = new Set([
+      'Get Up Sit Up',
+      'Half Kneeling Windmill',
+      'Bent Press',
+      'Russian Twist',
+      // Alles uit Anti-Rotation:
+      'Suitcase Deadlift','Plank Pull Through','Half Kneeling Lift','Renegade Row','Elevated Push Up','Bottom Up Squat'
+    ]);
+
+    // Seeded RNG
+    function xmur3(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return ()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return (h^h>>>16)>>>0;};}
+    function sfc32(a,b,c,d){return function(){a>>>0;b>>>0;c>>>0;d>>>0;var t=(a+b|0)+d|0;d=d+1|0;a=b^b>>>9;b=c+(c<<3)|0;c=(c<<21|c>>>11);c=c+t|0;return (t>>>0)/4294967296;};}
+    function rngFromSeed(seedStr){ const seed=xmur3(seedStr); return sfc32(seed(),seed(),seed(),seed()); }
+    function shuffleRng(arr, rng){
+      const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a;
+    }
+    function pickWeightedNot(weightsObj, avoid, rng){
+      const keys=Object.keys(weightsObj), w=keys.map(k=>weightsObj[k]);
+      if(keys.length===1) return keys[0];
+      let guard=0;
+      while(guard++<200){
+        const sum=w.reduce((a,b)=>a+b,0);
+        let r=rng()*sum, idx=0;
+        for(let i=0;i<w.length;i++){ r-=w[i]; if(r<=0){ idx=i; break; } }
+        const cand=keys[idx];
+        if(cand!==avoid) return cand;
+      }
+      return keys[0];
+    }
+    function pickNot(list, avoid, rng){
+      if(list.length===1) return list[0];
+      let guard=0;
+      while(guard++<200){
+        const cand=list[Math.floor(rng()*list.length)];
+        if(cand!==avoid) return cand;
+      }
+      return list[0];
+    }
+    function uuid4(){
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{
+        const r=(Math.random()*16)|0, v=c==='x'?r:(r&0x3|0x8); return v.toString(16);
+      });
+    }
+    function todayKeyAms(){
+      const d=new Date(); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+
+    // Carry-afstanden + annotaties (zonder oefeningsnaam te wijzigen)
+    function carryDistanceNote(chosenFormat){
+      if(/Rep Ladder/i.test(chosenFormat)) return "10–20–30–40–50 m";
+      if(/Timed/i.test(chosenFormat)) return "laps van ~20 m tijdens werktijd";
+      return "20 m per rep";
+    }
+    function carryStyleNote(exercise, chosenFormat){
+      const isDouble = /Double Bell/i.test(chosenFormat);
+      const isUneven = /Uneven/i.test(chosenFormat);
+      if(isDouble){
+        if(exercise === 'Suitcase Carry') return "(2x suitcase)";
+        if(exercise === 'Front Rack Carry') return "(double rack)";
+        if(exercise === 'Overhead Carry') return "(double overhead)";
+        if(exercise === 'Bottom Up Carry') return ""; // dit blijft single-bell only → highlight komt elders
+      }
+      if(isUneven){
+        return "(uneven carry: medium + light, switch sides)";
+      }
+      return "";
+    }
+
+    // Hints op basis van format en oefening
+    function hintFor(pattern, exercise, chosenFormat){
+      const isDouble = /Double Bell/i.test(chosenFormat);
+      const isUneven = /Uneven/i.test(chosenFormat);
+      let bits = [];
+
+      // 1) Single-bell-only highlight (alleen bij Double/Uneven)
+      if((isDouble || isUneven) && SINGLE_BELL_ONLY.has(exercise)){
+        bits.push("⚠ single-bell only");
+      }
+
+      // 2) Carry-specifieke stijl + afstand, voor alle formats
+      if(pattern === 'Loaded Carry'){
+        const style = carryStyleNote(exercise, chosenFormat);        // (2x suitcase) / uneven …
+        const dist  = carryDistanceNote(chosenFormat);               // 20 m per rep / ladder / timed
+        if(style) bits.push(style);
+        if(dist)  bits.push(dist);
+      }
+
+      return bits.length ? "— " + bits.join(" • ") : "";
+    }
+
+    function generateRiseSession({ seed, history }){
+      const rng = rngFromSeed(seed || todayKeyAms());
+      const last = (history && history.length) ? history[history.length-1] : null;
+
+      const prevFormat = last?.meta?.format || null;
+      const chosenFormat = pickWeightedNot(RISE_FORMAT_WEIGHTS, prevFormat, rng);
+
+      const prevFinisherFormat = last?.meta?.finisher_format || null;
+      const finisherFormat = pickWeightedNot(RISE_FINISHER_FORMAT_WEIGHTS, prevFinisherFormat, rng);
+
+      // A/B afwisselen (start met A)
+      const useA = (history?.length ?? 0) % 2 === 0;
+
+      // Laatste A/B oefening zoeken om te vermijden
+      let lastA=null, lastB=null;
+      if(history?.length){
+        for(let i=history.length-1;i>=0;i--){
+          const s=history[i];
+          if(s?.meta?.finisher_group==='A' && !lastA) lastA=s.meta.finisher_exercise;
+          if(s?.meta?.finisher_group==='B' && !lastB) lastB=s.meta.finisher_exercise;
+          if(lastA && lastB) break;
+        }
+      }
+      const finisherExercise = useA
+        ? pickNot(RISE_FINISHER_A, lastA, rng)
+        : pickNot(RISE_FINISHER_B, lastB, rng);
+      const finisherGroup = useA ? 'A' : 'B';
+
+      // Part 2 – niet dezelfde oefening per patroon als vorige sessie
+      const prevPart2 = last?.meta?.part2 || {};
+      const part2 = {};
+      Object.keys(RISE_PATTERNS).forEach(p=>{
+        part2[p] = pickNot(RISE_PATTERNS[p], prevPart2?.[p] || null, rng);
+      });
+
+      const order = shuffleRng(Object.entries(part2), rng);
+
+      // Met witregels + hints (incl. carry-afstanden)
+      const main = [
+        "Part 1: 10 minutes quality Get Up's",
+        "",
+        `Format: ${chosenFormat}`,
+        "Part 2 – 25 minuten circuit:",
+        ...order.map(([k,v])=>{
+          const extra = hintFor(k, v, chosenFormat);
+          return `  ${k}: ${v}${extra ? " " + extra : ""}`;
+        }),
+        "",
+        `Finisher Format: ${finisherFormat}`,
+        "Part 3 – 10 minutes quality reps:",
+        `  ${finisherExercise}`
+      ];
+
+      return {
+        id: uuid4(),
+        main,
+        meta: {
+          modality: "rise",
+          date: new Date().toISOString(),
+          format: chosenFormat,
+          finisher_format: finisherFormat,
+          finisher_group: finisherGroup,
+          finisher_exercise: finisherExercise,
+          part2
+        }
+      };
+    }
+
+    /* ============== Storage helpers ============== */
+    const KEY_CURRENT = 'current:rise';
+    const KEY_HISTORY = 'history:rise';
+    const KEY_SHOW_FORMATS = 'rise:showFormats';
+
+    function pinTodayRise(rerollN=0){
+      const baseHistory = lsGet(KEY_HISTORY,[]);
+      const current = lsGet(KEY_CURRENT, null);
+      // Anti-herhaal geldt ook bij reroll: behandel huidige pin als "laatste" referentie
+      const historyForRules = current ? baseHistory.concat([current]) : baseHistory;
+
+      const seed = rerollN>0 ? `${todayKeyAms()}#${rerollN}` : todayKeyAms();
+      const session = generateRiseSession({ seed, history: historyForRules });
+      session.meta.reroll = rerollN;
+      lsSet(KEY_CURRENT, session);
+      return session;
+    }
+
+    function saveRiseToHistory(session, timer_seconds=0){
+      const arr = lsGet(KEY_HISTORY,[]);
+      arr.push({ ...session, saved_at: new Date().toISOString(), timer_seconds });
+      lsSet(KEY_HISTORY, arr);
+    }
+    function deleteRiseHistoryItem(id){
+      const arr = lsGet(KEY_HISTORY,[]);
+      lsSet(KEY_HISTORY, arr.filter(x=>x.id!==id));
+    }
+    function clearRiseHistory(){
+      if(confirm("Delete ALL Rise history?")) lsSet(KEY_HISTORY, []);
+    }
+
+    /* ============== SessionView met formats-toggle logica ============== */
+    function SessionView({ session, showFormats }) {
+      if(!session) return null;
+
+      // Herbouw de lijnen zodat we contextueel hints/hardlines kunnen toevoegen
+      const raw = session.main || [];
+      const lines = [];
+      for(let i=0;i<raw.length;i++){
+        const L = String(raw[i]);
+
+        // Verberg specifieke formatregels als toggle uit staat
+        if(!showFormats && (L.trim().startsWith("Format:") || L.trim().startsWith("Finisher Format:"))){
+          continue;
+        }
+
+        lines.push(L);
+
+        // Voeg generieke doelen toe als formats uit staan
+        if(!showFormats && L.trim()==="Part 2 – 25 minuten circuit:"){
+          lines.push("  Doel: 3 ronden van 5–7 reps");
+        }
+        if(!showFormats && L.trim()==="Part 3 – 10 minutes quality reps:"){
+          lines.push("  Doel: 5–20 reps");
+        }
+      }
+
+      const t = session.meta?.date ? ` • ${new Date(session.meta.date).toLocaleDateString()}` : "";
+      return (
+        <div>
+          <h3 className="font-semibold mb-2 text-base sm:text-lg">Rise Session{t}</h3>
+          <div className="text-base sm:text-lg space-y-1">
+            {renderSmartList(lines)}
+          </div>
+          <p className="text-xs text-gray-400 mt-2">Pinned until you press “Complete”.</p>
+        </div>
+      );
+    }
+
+    /* ============== App (single Train page) ============== */
+    function App(){
+      const [session,setSession] = useState(lsGet(KEY_CURRENT,null));
+      const [elapsed,setElapsed] = useState(0);
+      const [running,setRunning] = useState(false);
+      const [historyOpen,setHistoryOpen] = useState(true);
+      const [version,setVersion] = useState(0); // force refresh after deletes
+      const [rerolls,setRerolls] = useState(session?.meta?.reroll || 0);
+      const [showFormats,setShowFormats] = useState(lsGet(KEY_SHOW_FORMATS, true));
+
+      function generateToday(){
+        const s = pinTodayRise(0);
+        setSession(s); setElapsed(0); setRunning(false); setRerolls(0);
+      }
+      function rerollToday(){
+        const next = (rerolls||0)+1;
+        const s = pinTodayRise(next);
+        setSession(s); setElapsed(0); setRunning(false); setRerolls(next);
+      }
+      function complete(){
+        if(!session) return;
+        setRunning(false);
+        saveRiseToHistory(session, elapsed||0);
+        try{ localStorage.removeItem(KEY_CURRENT); }catch(e){}
+        setSession(null); setElapsed(0);
+        alert('Rise session saved.');
+        setVersion(v=>v+1);
+      }
+
+      const history = (lsGet(KEY_HISTORY,[]).slice().sort((a,b)=> new Date(b.saved_at)-new Date(a.saved_at)));
+
+      return (
+        <div className="mx-auto w-full max-w-[680px] px-3">
+          {/* Topbar */}
+          <div className="sticky top-0 z-20 backdrop-blur bg-white/70 dark:bg-gray-900/60 border-b border-black/10 dark:border-white/10">
+            <div className="flex items-center justify-between h-12">
+              <h1 className="font-semibold text-lg">EverStrong — Rise</h1>
+              <div className="flex items-center gap-3">
+                <label className="text-xs sm:text-sm flex items-center gap-2 select-none">
+                  <input
+                    type="checkbox"
+                    checked={showFormats}
+                    onChange={(e)=>{ setShowFormats(e.target.checked); lsSet(KEY_SHOW_FORMATS, e.target.checked); }}
+                  />
+                  Show formats
+                </label>
+                <button onClick={()=>document.documentElement.classList.toggle('dark')} className="text-xs underline opacity-80">Dark</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="mt-3 space-y-3">
+            <CalmCard
+              title="Today's Rise"
+              subtitle="Deterministisch per dag — vastgepind tot je Complete drukt"
+            >
+              {!session ? (
+                <div className="flex flex-col gap-2">
+                  <button className="btn bg-blue-600 w-full" onClick={generateToday}>Generate Today’s Rise</button>
+                </div>
+              ) : (
+                <>
+                  <SessionView session={session} showFormats={showFormats}/>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button className="btn-sm bg-green-600" onClick={complete}>Complete</button>
+                    <button className="btn-sm bg-gray-700" onClick={rerollToday} title="Nieuwe seed voor vandaag">Reroll</button>
+                  </div>
+                </>
+              )}
+            </CalmCard>
+
+            <CalmCard title="Timer">
+              <Timer elapsed={elapsed} setElapsed={setElapsed} running={running} setRunning={setRunning} />
+            </CalmCard>
+
+            <CalmCard
+              title={`History (${history.length})`}
+              footer={
+                <div className="flex gap-2">
+                  <button className="btn bg-red-700 w-full" onClick={()=>{ clearRiseHistory(); setVersion(v=>v+1); }}>Clear all</button>
+                </div>
+              }
+            >
+              <button className="text-sm underline" onClick={()=>setHistoryOpen(o=>!o)}>
+                {historyOpen? 'Hide' : 'Show'}
+              </button>
+              {historyOpen && (
+                <div className="mt-2 space-y-2">
+                  {history.length===0 && <div className="text-sm text-gray-400">Empty</div>}
+                  {history.map((h,idx)=>(
+                    <div key={h.id||idx} className="p-3 rounded-xl border border-black/10 dark:border-white/10">
+                      <div className="text-sm flex flex-wrap gap-3">
+                        <span className="font-medium">RISE</span>
+                        <span>• {new Date(h.meta?.date||h.saved_at).toLocaleString()}</span>
+                        {h.timer_seconds>0 && <span>• Time: {fmtHMS(h.timer_seconds)}</span>}
+                        {h.meta?.format && <span className="truncate max-w-[50%]">• {h.meta.format}</span>}
+                        {h.meta?.finisher_format && <span className="truncate max-w-[50%]">• {h.meta.finisher_format}</span>}
+                      </div>
+                      <div className="text-sm mt-1">
+                        {renderSmartList(h.main || [])}
+                      </div>
+                      <div className="mt-2">
+                        <button
+                          className="btn-sm bg-gray-700"
+                          onClick={()=>{ deleteRiseHistoryItem(h.id); setVersion(v=>v+1); }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CalmCard>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
