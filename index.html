@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <title>EverStrong — Rise</title>
+  <title>Rise</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="theme-color" content="#0b0f19"/>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -287,7 +287,7 @@
         "Part 1: 10 minutes quality Get Up's",
         "",
         `Format: ${chosenFormat}`,
-        "Part 2 – 25 minuten circuit:",
+        "Part 2 – 25 minutes circuit:",
         ...order.map(([k,v])=>{
           const extra = hintFor(k, v, chosenFormat);
           return `  ${k}: ${v}${extra ? " " + extra : ""}`;
@@ -363,11 +363,11 @@
         lines.push(L);
 
         // Voeg generieke doelen toe als formats uit staan
-        if(!showFormats && L.trim()==="Part 2 – 25 minuten circuit:"){
-          lines.push("  Doel: 3 ronden van 5–7 reps");
+        if(!showFormats && L.trim()==="Part 2 – 25 minutes circuit:"){
+          lines.push("van 5 – 7 reps");
         }
         if(!showFormats && L.trim()==="Part 3 – 10 minutes quality reps:"){
-          lines.push("  Doel: 5–20 reps");
+          lines.push("van 5 – 20 reps");
         }
       }
 
@@ -520,4 +520,5 @@
   </script>
 </body>
 </html>
+
 
