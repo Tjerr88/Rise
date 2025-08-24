@@ -1,411 +1,423 @@
-import React, { useEffect, useMemo, useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RISE – Session Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React UMD + ReactDOM UMD -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel Standalone to transpile JSX in the browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <div id="root"></div>
 
-/**
- * RISE – Full Session Generator (single-file React component)
- * ----------------------------------------------------------
- * Implements:
- *  - Part 1 Get Ups (10 min), Part 2 Main Circuit (25 min), Part 3 Finisher (10 min OTM)
- *  - Formats for Part 2 & Part 3 (Single, Rep Ladder, Weight Ladder, Double, Uneven, Timed)
- *  - Advanced exercise toggle (hides advanced until enabled)
- *  - Support rules for Double/Uneven (certain drills disallow)
- *  - Simple anti-repeat: avoid same exercise/format as previous session (per pattern) via localStorage
- *  - Carry distances guidance (rep ladder → 20 m × reps)
- *
- *  TailwindCSS assumed available globally.
- */
+  <script type="text/babel">
+    // =========================
+    // RISE – Full Session Generator (UMD + Babel version)
+    // =========================
+    const { useEffect, useMemo, useState } = React;
 
-// ---------- Utils ----------
-const STORAGE_KEY = "rise_last_session_v1";
+    // ---------- Utils ----------
+    const STORAGE_KEY = "rise_last_session_v1";
 
-function mulberry32(a) {
-  return function () {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+    function mulberry32(a) {
+      return function () {
+        let t = (a += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
 
-function pickRandom(arr, rng = Math.random) {
-  return arr[Math.floor(rng() * arr.length)];
-}
+    function pickRandom(arr, rng = Math.random) {
+      return arr[Math.floor(rng() * arr.length)];
+    }
 
-function loadLastSession() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
+    function loadLastSession() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    }
 
-function saveLastSession(session) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  } catch {}
-}
+    function saveLastSession(session) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      } catch {}
+    }
 
-// ---------- Formats ----------
-const FORMATS_PART2 = [
-  { key: "single", label: "Single Bell (5–7 @ Medium)", type: "single" },
-  { key: "rep_ladder", label: "Rep Ladder (1–2–3–4–5 @ Medium)", type: "rep_ladder" },
-  { key: "weight_ladder", label: "Weight Ladder (5, 3, 2+ @ Light→Medium→Heavy)", type: "weight_ladder" },
-  { key: "double", label: "Double Bell (5–7 @ 2×Light)", type: "double" },
-  { key: "uneven", label: "Uneven Weight (5–7 @ Medium + Light)", type: "uneven" },
-  { key: "timed", label: "Timed (20s max @ Light; 10s switch)", type: "timed" },
-];
+    // ---------- Formats ----------
+    const FORMATS_PART2 = [
+      { key: "single", label: "Single Bell (5–7 @ Medium)", type: "single" },
+      { key: "rep_ladder", label: "Rep Ladder (1–2–3–4–5 @ Medium)", type: "rep_ladder" },
+      { key: "weight_ladder", label: "Weight Ladder (5, 3, 2+ @ Light→Medium→Heavy)", type: "weight_ladder" },
+      { key: "double", label: "Double Bell (5–7 @ 2×Light)", type: "double" },
+      { key: "uneven", label: "Uneven Weight (5–7 @ Medium + Light)", type: "uneven" },
+      { key: "timed", label: "Timed (20s max @ Light; 10s switch)", type: "timed" },
+    ];
 
-const FORMATS_PART3 = [
-  { key: "single", label: "Single Bell (10–20 @ Medium)", type: "single" },
-  { key: "rep_ladder", label: "Rep Ladder (5–10–15–20 @ Medium)", type: "rep_ladder" },
-  { key: "weight_ladder", label: "Weight Ladder (10,10,5+ @ Light→Medium→Heavy)", type: "weight_ladder" },
-  { key: "double", label: "Double Bell (2–4–6–[8–10] @ 2×Light)", type: "double" },
-  { key: "uneven", label: "Uneven Weight (5–10 @ Light+Medium)", type: "uneven" },
-  { key: "timed", label: "Timed (20s work / 40s rest @ Medium) – EMOM", type: "timed" },
-];
+    const FORMATS_PART3 = [
+      { key: "single", label: "Single Bell (10–20 @ Medium)", type: "single" },
+      { key: "rep_ladder", label: "Rep Ladder (5–10–15–20 @ Medium)", type: "rep_ladder" },
+      { key: "weight_ladder", label: "Weight Ladder (10,10,5+ @ Light→Medium→Heavy)", type: "weight_ladder" },
+      { key: "double", label: "Double Bell (2–4–6–[8–10] @ 2×Light)", type: "double" },
+      { key: "uneven", label: "Uneven Weight (5–10 @ Light+Medium)", type: "uneven" },
+      { key: "timed", label: "Timed (20s work / 40s rest @ Medium) – EMOM", type: "timed" },
+    ];
 
-// ---------- Exercises ----------
-const EX = (name, { advanced = false, d = true, u = true } = {}) => ({
-  name,
-  advanced,
-  supportsDouble: d,
-  supportsUneven: u,
-});
-
-const EXERCISES = {
-  Squat: [
-    EX("Front Squat"),
-    EX("Hack Squat", { advanced: true }),
-    EX("Cossack Squat", { advanced: true }),
-    EX("B-Stance Goblet Squat"),
-    EX("Step Up"),
-    EX("Pistol Squat", { advanced: true }),
-  ],
-  Pull: [
-    EX("Tactical Pull Up"),
-    EX("Chin Up"),
-    EX("Small Row"),
-    EX("Wide Row"),
-    EX("Dead Clean"),
-    EX("Low Pull Snatch", { advanced: true }),
-  ],
-  Hinge: [
-    EX("Deadstop Swing"),
-    EX("Sumo Deadlift"),
-    EX("Side Step Swing", { advanced: true }),
-    EX("B-Stance Goodmorning", { advanced: true }),
-    EX("Single Leg Deadlift"),
-    EX("Single Leg Glute Bridge"),
-  ],
-  Push: [
-    EX("Military Press"),
-    EX("Half Kneeling Press"),
-    EX("Floor Press"),
-    EX("Power Push Up"),
-    EX("Push Press"),
-    EX("Push Jerk", { advanced: true }),
-  ],
-  Lunge: [
-    EX("Front Lunge"),
-    EX("Reverse Lunge"),
-    EX("Side Lunge"),
-    EX("Curtsy Lunge"),
-    EX("Tactical Lunge"),
-    EX("Athletic Lunge", { advanced: true }),
-  ],
-  Rotation: [
-    EX("Half Kneeling Rotation"),
-    EX("Get Up Sit Up", { d: false, u: false }),
-    EX("Windmill", { advanced: true }),
-    EX("Half Kneeling Windmill", { d: false, u: false }),
-    EX("Bent Press", { advanced: true, d: false, u: false }),
-    EX("Russian Twist", { d: false, u: false }),
-  ],
-  "Anti-Rotation": [
-    EX("Suitcase Deadlift", { d: false, u: false }),
-    EX("Plank Pull Through", { d: false, u: false }),
-    EX("Half Kneeling Lift", { d: false, u: false }),
-    EX("Renegade Row", { advanced: true, d: false, u: false }),
-    EX("Elevated Push Up", { d: false, u: false }),
-    EX("Bottom Up Squat", { advanced: true, d: false, u: false }),
-  ],
-  "Loaded Carry": [
-    EX("Suitcase Carry"),
-    EX("Front Rack Carry"),
-    EX("Overhead Carry"),
-    EX("Bottom Up Carry", { advanced: true }),
-    EX("Bear Crawl"),
-    EX("Cook Drill"),
-  ],
-};
-
-const PATTERNS = Object.keys(EXERCISES);
-
-// Finishers (families A/B)
-const FINISHER_A = [EX("One-Arm Swing"), EX("Two-Arm Swing"), EX("Snatch", { advanced: true })];
-const FINISHER_B = [EX("Push Press"), EX("Clean & Jerk", { advanced: true }), EX("Clean & Push Press")];
-
-// ---------- Selection helpers ----------
-function filterByAdvanced(pool, includeAdvanced) {
-  return includeAdvanced ? pool : pool.filter((x) => !x.advanced);
-}
-
-function formatIsCompatible(formatType, exercise) {
-  if (formatType === "double") return exercise.supportsDouble;
-  if (formatType === "uneven") return exercise.supportsUneven;
-  return true;
-}
-
-function chooseDistinctFormat(rng, available, lastFormatKey) {
-  const notLast = available.filter((f) => f.key !== lastFormatKey);
-  return notLast.length ? pickRandom(notLast, rng) : pickRandom(available, rng);
-}
-
-function chooseExercise(rng, pool, formatType, lastChoice, includeAdvanced) {
-  const candidates = filterByAdvanced(pool, includeAdvanced).filter((ex) =>
-    formatIsCompatible(formatType, ex)
-  );
-  const filtered = lastChoice ? candidates.filter((ex) => ex.name !== lastChoice.exercise) : candidates;
-  if (filtered.length) return pickRandom(filtered, rng);
-  if (candidates.length) return pickRandom(candidates, rng);
-  const singles = filterByAdvanced(pool, includeAdvanced);
-  return singles.length ? pickRandom(singles, rng) : null;
-}
-
-// ---------- Generators ----------
-function generatePart1GetUps(bell) {
-  return {
-    title: "Part 1 – Get Ups (10 min)",
-    note: `Quality > quantity. Left & right. Use the same bell as Part 2 (currently: ${bell}). Build: 3×(1+1) → 5×(1+1) → 3×(2+2).`,
-  };
-}
-
-function describePart2Set(format) {
-  switch (format.type) {
-    case "single":
-      return "5–7 reps @ Medium";
-    case "rep_ladder":
-      return "1–2–3–4–5 @ Medium";
-    case "weight_ladder":
-      return "5, 3, 2+ @ Light→Medium→Heavy (final set only with perfect form)";
-    case "double":
-      return "5–7 reps @ 2×Light (symmetrical)";
-    case "uneven":
-      return "5–7 reps @ Medium + Light (anti-rotation focus)";
-    case "timed":
-      return "20s max reps @ Light, 10s switch per side";
-    default:
-      return "";
-  }
-}
-
-function describeCarryIfNeeded(pattern, format) {
-  if (pattern !== "Loaded Carry") return null;
-  if (format.type === "rep_ladder") return "Distance: 20 m × reps (10→20→30→40→50 m).";
-  return "Default distance: ~20 m per effort (adjust by weight).";
-}
-
-function generatePart2(rng, includeAdvanced, last) {
-  const patterns = [...PATTERNS].sort(() => rng() - 0.5);
-
-  const blocks = patterns.map((pattern) => {
-    const lastItem = last?.part2?.find((b) => b.pattern === pattern) || null;
-    const format = chooseDistinctFormat(rng, FORMATS_PART2, lastItem?.format?.key ?? null);
-    const exercise = chooseExercise(rng, EXERCISES[pattern], format.type, lastItem, includeAdvanced);
-
-    return {
-      pattern,
-      exercise: exercise ? exercise.name : "— (no eligible exercise) —",
-      advanced: !!exercise?.advanced,
-      format,
-      setDesc: describePart2Set(format),
-      carryDesc: describeCarryIfNeeded(pattern, format),
-    };
-  });
-
-  return {
-    title: "Part 2 – 25-Minute Circuit",
-    note: "8 movements (1 per pattern), varying order & format. Prioritise technique, tension, control.",
-    blocks,
-  };
-}
-
-function describePart3Set(format) {
-  switch (format.type) {
-    case "single":
-      return "10–20 reps @ Medium";
-    case "rep_ladder":
-      return "5–10–15–20 @ Medium (pace or brief rests)";
-    case "weight_ladder":
-      return "10, 10, 5+ @ Light→Medium→Heavy (stop at technical failure)";
-    case "double":
-      return "2–4–6–[8–10] @ 2×Light (tight & symmetrical)";
-    case "uneven":
-      return "5–10 @ Light + Medium (alternate sides)";
-    case "timed":
-      return "10 min OTM: 20s work / 40s rest @ Medium (EMOM style)";
-    default:
-      return "";
-  }
-}
-
-function generatePart3(rng, includeAdvanced, last) {
-  const families = [FINISHER_A, FINISHER_B];
-  const lastFam = last?.part3?.family ?? null;
-  const famIdx = ((Math.floor(rng() * 2) + (lastFam === "A" ? 1 : 0)) % 2);
-  const family = famIdx === 0 ? FINISHER_A : FINISHER_B;
-  const familyKey = famIdx === 0 ? "A" : "B";
-
-  const lastFmtKey = last?.part3?.format?.key ?? null;
-  const format = chooseDistinctFormat(rng, FORMATS_PART3, lastFmtKey);
-
-  const candidates = filterByAdvanced(family, includeAdvanced);
-  const lastName = last?.part3?.exercise ?? null;
-  const filtered = lastName ? candidates.filter((x) => x.name !== lastName) : candidates;
-  const exercise = filtered.length ? pickRandom(filtered, rng) : pickRandom(candidates, rng);
-
-  return {
-    title: "Part 3 – Finisher (10 min OTM)",
-    family: familyKey,
-    exercise: exercise?.name ?? "— (no eligible exercise) —",
-    advanced: !!exercise?.advanced,
-    format,
-    setDesc: describePart3Set(format),
-  };
-}
-
-function deriveBellGuidance() {
-  return {
-    startRule:
-      "Start with a kettlebell you can military press for 8–10 reps. Light = one size lighter; Medium = baseline; Heavy = one size heavier.",
-    progressRule:
-      "Increase when you complete Military Press Rep Ladder (1–5) and finish Weight Ladder with 5 clean reps @ Heavy.",
-  };
-}
-
-// ---------- UI ----------
-function Section({ title, children, note }) {
-  return (
-    <section className="rounded-2xl bg-white shadow p-5">
-      <div className="flex items-start justify-between gap-4">
-        <h2 className="text-xl font-semibold">{title}</h2>
-      </div>
-      {note && <p className="mt-1 text-sm opacity-70">{note}</p>}
-      <div className="mt-3">{children}</div>
-    </section>
-  );
-}
-
-function BlockCard({ pattern, exercise, advanced, format, setDesc, carryDesc }) {
-  return (
-    <div className="rounded-xl border border-gray-100 p-4 flex items-start justify-between">
-      <div>
-        <div className="text-xs uppercase tracking-widest opacity-60">{pattern}</div>
-        <div className="text-lg font-semibold">{exercise}</div>
-        <div className="text-sm opacity-80">{format.label}</div>
-        {setDesc && <div className="text-xs opacity-70">{setDesc}</div>}
-        {carryDesc && <div className="text-xs opacity-80 mt-1">{carryDesc}</div>}
-      </div>
-      {advanced && (
-        <span className="text-xs px-2 py-1 h-fit rounded-full bg-amber-100 text-amber-900">Advanced</span>
-      )}
-    </div>
-  );
-}
-
-export default function RiseApp() {
-  const [includeAdvanced, setIncludeAdvanced] = useState(false);
-  const [seed, setSeed] = useState(() => Date.now());
-  const [last, setLast] = useState(() => loadLastSession());
-
-  useEffect(() => {
-    setLast(loadLastSession());
-  }, []);
-
-  const rng = useMemo(() => mulberry32(seed), [seed]);
-  const bells = useMemo(() => deriveBellGuidance(), []);
-
-  const part2 = useMemo(() => generatePart2(rng, includeAdvanced, last), [rng, includeAdvanced, last]);
-  const part1 = useMemo(() => generatePart1GetUps("Medium"), []);
-  const part3 = useMemo(() => generatePart3(rng, includeAdvanced, last), [rng, includeAdvanced, last]);
-
-  useEffect(() => {
-    saveLastSession({
-      part2: part2.blocks.map((b) => ({ pattern: b.pattern, exercise: b.exercise, format: b.format })),
-      part3: { exercise: part3.exercise, family: part3.family, format: part3.format },
+    // ---------- Exercises ----------
+    const EX = (name, { advanced = false, d = true, u = true } = {}) => ({
+      name,
+      advanced,
+      supportsDouble: d,
+      supportsUneven: u,
     });
-  }, [part2, part3]);
 
-  return (
-    <div className="min-h-screen w-full bg-gray-50 text-gray-900 p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">RISE – Session Generator</h1>
-            <p className="text-sm opacity-80">Build strength through movement, mastery through variety.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 bg-white shadow px-3 py-2 rounded-xl">
-              <input
-                type="checkbox"
-                className="h-5 w-5"
-                checked={includeAdvanced}
-                onChange={(e) => setIncludeAdvanced(e.target.checked)}
-              />
-              <span className="text-sm font-medium">Include advanced</span>
-            </label>
-            <button
-              onClick={() => setSeed(Date.now())}
-              className="px-4 py-2 rounded-xl shadow bg-black text-white hover:opacity-90"
-            >
-              Generate
-            </button>
-          </div>
-        </header>
+    const EXERCISES = {
+      Squat: [
+        EX("Front Squat"),
+        EX("Hack Squat", { advanced: true }),
+        EX("Cossack Squat", { advanced: true }),
+        EX("B-Stance Goblet Squat"),
+        EX("Step Up"),
+        EX("Pistol Squat", { advanced: true }),
+      ],
+      Pull: [
+        EX("Tactical Pull Up"),
+        EX("Chin Up"),
+        EX("Small Row"),
+        EX("Wide Row"),
+        EX("Dead Clean"),
+        EX("Low Pull Snatch", { advanced: true }),
+      ],
+      Hinge: [
+        EX("Deadstop Swing"),
+        EX("Sumo Deadlift"),
+        EX("Side Step Swing", { advanced: true }),
+        EX("B-Stance Goodmorning", { advanced: true }),
+        EX("Single Leg Deadlift"),
+        EX("Single Leg Glute Bridge"),
+      ],
+      Push: [
+        EX("Military Press"),
+        EX("Half Kneeling Press"),
+        EX("Floor Press"),
+        EX("Power Push Up"),
+        EX("Push Press"),
+        EX("Push Jerk", { advanced: true }),
+      ],
+      Lunge: [
+        EX("Front Lunge"),
+        EX("Reverse Lunge"),
+        EX("Side Lunge"),
+        EX("Curtsy Lunge"),
+        EX("Tactical Lunge"),
+        EX("Athletic Lunge", { advanced: true }),
+      ],
+      Rotation: [
+        EX("Half Kneeling Rotation"),
+        EX("Get Up Sit Up", { d: false, u: false }),
+        EX("Windmill", { advanced: true }),
+        EX("Half Kneeling Windmill", { d: false, u: false }),
+        EX("Bent Press", { advanced: true, d: false, u: false }),
+        EX("Russian Twist", { d: false, u: false }),
+      ],
+      "Anti-Rotation": [
+        EX("Suitcase Deadlift", { d: false, u: false }),
+        EX("Plank Pull Through", { d: false, u: false }),
+        EX("Half Kneeling Lift", { d: false, u: false }),
+        EX("Renegade Row", { advanced: true, d: false, u: false }),
+        EX("Elevated Push Up", { d: false, u: false }),
+        EX("Bottom Up Squat", { advanced: true, d: false, u: false }),
+      ],
+      "Loaded Carry": [
+        EX("Suitcase Carry"),
+        EX("Front Rack Carry"),
+        EX("Overhead Carry"),
+        EX("Bottom Up Carry", { advanced: true }),
+        EX("Bear Crawl"),
+        EX("Cook Drill"),
+      ],
+    };
 
-        <Section title={part1.title} note={part1.note}>
-          <ul className="list-disc list-inside text-sm opacity-80">
-            <li>Timebox: 10 minutes.</li>
-            <li>Left & right. Quality over quantity.</li>
-          </ul>
-        </Section>
+    const PATTERNS = Object.keys(EXERCISES);
 
-        <Section title={part2.title} note={part2.note}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {part2.blocks.map((b) => (
-              <BlockCard key={b.pattern} {...b} />
-            ))}
-          </div>
-        </Section>
+    // Finishers (families A/B)
+    const FINISHER_A = [EX("One-Arm Swing"), EX("Two-Arm Swing"), EX("Snatch", { advanced: true })];
+    const FINISHER_B = [EX("Push Press"), EX("Clean & Jerk", { advanced: true }), EX("Clean & Push Press")];
 
-        <Section title={part3.title} note="One intensive exercise; rotates per session.">
-          <div className="rounded-xl bg-white shadow p-4 flex items-start justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-widest opacity-60">Family {part3.family}</div>
-              <div className="text-lg font-semibold">{part3.exercise}</div>
-              <div className="text-sm opacity-80">{part3.format.label}</div>
-              <div className="text-xs opacity-70">{part3.setDesc}</div>
-              <div className="text-xs opacity-70 mt-1">10 minutes OTM / EMOM style.</div>
-            </div>
-            {part3.advanced && (
-              <span className="text-xs px-2 py-1 h-fit rounded-full bg-amber-100 text-amber-900">Advanced</span>
-            )}
-          </div>
-        </Section>
+    // ---------- Selection helpers ----------
+    function filterByAdvanced(pool, includeAdvanced) {
+      return includeAdvanced ? pool : pool.filter((x) => !x.advanced);
+    }
 
+    function formatIsCompatible(formatType, exercise) {
+      if (formatType === "double") return exercise.supportsDouble;
+      if (formatType === "uneven") return exercise.supportsUneven;
+      return true;
+    }
+
+    function chooseDistinctFormat(rng, available, lastFormatKey) {
+      const notLast = available.filter((f) => f.key !== lastFormatKey);
+      return notLast.length ? pickRandom(notLast, rng) : pickRandom(available, rng);
+    }
+
+    function chooseExercise(rng, pool, formatType, lastChoice, includeAdvanced) {
+      const candidates = filterByAdvanced(pool, includeAdvanced).filter((ex) =>
+        formatIsCompatible(formatType, ex)
+      );
+      const filtered = lastChoice ? candidates.filter((ex) => ex.name !== lastChoice.exercise) : candidates;
+      if (filtered.length) return pickRandom(filtered, rng);
+      if (candidates.length) return pickRandom(candidates, rng);
+      const singles = filterByAdvanced(pool, includeAdvanced);
+      return singles.length ? pickRandom(singles, rng) : null;
+    }
+
+    // ---------- Generators ----------
+    function generatePart1GetUps(bell) {
+      return {
+        title: "Part 1 – Get Ups (10 min)",
+        note: `Quality > quantity. Left & right. Use the same bell as Part 2 (currently: ${bell}). Build: 3×(1+1) → 5×(1+1) → 3×(2+2).`,
+      };
+    }
+
+    function describePart2Set(format) {
+      switch (format.type) {
+        case "single":
+          return "5–7 reps @ Medium";
+        case "rep_ladder":
+          return "1–2–3–4–5 @ Medium";
+        case "weight_ladder":
+          return "5, 3, 2+ @ Light→Medium→Heavy (final set only with perfect form)";
+        case "double":
+          return "5–7 reps @ 2×Light (symmetrical)";
+        case "uneven":
+          return "5–7 reps @ Medium + Light (anti-rotation focus)";
+        case "timed":
+          return "20s max reps @ Light, 10s switch per side";
+        default:
+          return "";
+      }
+    }
+
+    function describeCarryIfNeeded(pattern, format) {
+      if (pattern !== "Loaded Carry") return null;
+      if (format.type === "rep_ladder") return "Distance: 20 m × reps (10→20→30→40→50 m).";
+      return "Default distance: ~20 m per effort (adjust by weight).";
+    }
+
+    function generatePart2(rng, includeAdvanced, last) {
+      const patterns = [...PATTERNS].sort(() => rng() - 0.5);
+
+      const blocks = patterns.map((pattern) => {
+        const lastItem = last?.part2?.find((b) => b.pattern === pattern) || null;
+        const format = chooseDistinctFormat(rng, FORMATS_PART2, lastItem?.format?.key ?? null);
+        const exercise = chooseExercise(rng, EXERCISES[pattern], format.type, lastItem, includeAdvanced);
+
+        return {
+          pattern,
+          exercise: exercise ? exercise.name : "— (no eligible exercise) —",
+          advanced: !!exercise?.advanced,
+          format,
+          setDesc: describePart2Set(format),
+          carryDesc: describeCarryIfNeeded(pattern, format),
+        };
+      });
+
+      return {
+        title: "Part 2 – 25-Minute Circuit",
+        note: "8 movements (1 per pattern), varying order & format. Prioritise technique, tension, control.",
+        blocks,
+      };
+    }
+
+    function describePart3Set(format) {
+      switch (format.type) {
+        case "single":
+          return "10–20 reps @ Medium";
+        case "rep_ladder":
+          return "5–10–15–20 @ Medium (pace or brief rests)";
+        case "weight_ladder":
+          return "10, 10, 5+ @ Light→Medium→Heavy (stop at technical failure)";
+        case "double":
+          return "2–4–6–[8–10] @ 2×Light (tight & symmetrical)";
+        case "uneven":
+          return "5–10 @ Light + Medium (alternate sides)";
+        case "timed":
+          return "10 min OTM: 20s work / 40s rest @ Medium (EMOM style)";
+        default:
+          return "";
+      }
+    }
+
+    function generatePart3(rng, includeAdvanced, last) {
+      const families = [FINISHER_A, FINISHER_B];
+      const lastFam = last?.part3?.family ?? null;
+      const famIdx = ((Math.floor(rng() * 2) + (lastFam === "A" ? 1 : 0)) % 2);
+      const family = famIdx === 0 ? FINISHER_A : FINISHER_B;
+      const familyKey = famIdx === 0 ? "A" : "B";
+
+      const lastFmtKey = last?.part3?.format?.key ?? null;
+      const format = chooseDistinctFormat(rng, FORMATS_PART3, lastFmtKey);
+
+      const candidates = filterByAdvanced(family, includeAdvanced);
+      const lastName = last?.part3?.exercise ?? null;
+      const filtered = lastName ? candidates.filter((x) => x.name !== lastName) : candidates;
+      const exercise = filtered.length ? pickRandom(filtered, rng) : pickRandom(candidates, rng);
+
+      return {
+        title: "Part 3 – Finisher (10 min OTM)",
+        family: familyKey,
+        exercise: exercise?.name ?? "— (no eligible exercise) —",
+        advanced: !!exercise?.advanced,
+        format,
+        setDesc: describePart3Set(format),
+      };
+    }
+
+    function deriveBellGuidance() {
+      return {
+        startRule:
+          "Start with a kettlebell you can military press for 8–10 reps. Light = one size lighter; Medium = baseline; Heavy = one size heavier.",
+        progressRule:
+          "Increase when you complete Military Press Rep Ladder (1–5) and finish Weight Ladder with 5 clean reps @ Heavy.",
+      };
+    }
+
+    // ---------- UI ----------
+    function Section({ title, children, note }) {
+      return (
         <section className="rounded-2xl bg-white shadow p-5">
-          <h2 className="text-xl font-semibold">Progression & Weight Selection</h2>
-          <ul className="mt-2 text-sm opacity-80 list-disc list-inside">
-            <li>{bells.startRule}</li>
-            <li>{bells.progressRule}</li>
-            <li>Get Up bell matches Part 2. Build: 3×(1+1) → 5×(1+1) → 3×(2+2).</li>
-          </ul>
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="text-xl font-semibold">{title}</h2>
+          </div>
+          {note && <p className="mt-1 text-sm opacity-70">{note}</p>}
+          <div className="mt-3">{children}</div>
         </section>
+      );
+    }
 
-        <footer className="text-xs opacity-60 pt-2">
-          <div>Each session ~50 minutes • Train every other day or 3–4×/week • Track volume, recovery, and technique.</div>
-        </footer>
-      </div>
-    </div>
-  );
-}
+    function BlockCard({ pattern, exercise, advanced, format, setDesc, carryDesc }) {
+      return (
+        <div className="rounded-xl border border-gray-100 p-4 flex items-start justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-widest opacity-60">{pattern}</div>
+            <div className="text-lg font-semibold">{exercise}</div>
+            <div className="text-sm opacity-80">{format.label}</div>
+            {setDesc && <div className="text-xs opacity-70">{setDesc}</div>}
+            {carryDesc && <div className="text-xs opacity-80 mt-1">{carryDesc}</div>}
+          </div>
+          {advanced && (
+            <span className="text-xs px-2 py-1 h-fit rounded-full bg-amber-100 text-amber-900">Advanced</span>
+          )}
+        </div>
+      );
+    }
+
+    function RiseApp() {
+      const [includeAdvanced, setIncludeAdvanced] = useState(false);
+      const [seed, setSeed] = useState(() => Date.now());
+      const [last, setLast] = useState(() => loadLastSession());
+
+      useEffect(() => {
+        setLast(loadLastSession());
+      }, []);
+
+      const rng = useMemo(() => mulberry32(seed), [seed]);
+      const bells = useMemo(() => deriveBellGuidance(), []);
+
+      const part2 = useMemo(() => generatePart2(rng, includeAdvanced, last), [rng, includeAdvanced, last]);
+      const part1 = useMemo(() => generatePart1GetUps("Medium"), []);
+      const part3 = useMemo(() => generatePart3(rng, includeAdvanced, last), [rng, includeAdvanced, last]);
+
+      useEffect(() => {
+        saveLastSession({
+          part2: part2.blocks.map((b) => ({ pattern: b.pattern, exercise: b.exercise, format: b.format })),
+          part3: { exercise: part3.exercise, family: part3.family, format: part3.format },
+        });
+      }, [part2, part3]);
+
+      return (
+        <div className="min-h-screen w-full bg-gray-50 text-gray-900 p-6">
+          <div className="max-w-5xl mx-auto space-y-6">
+            <header className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold">RISE – Session Generator</h1>
+                <p className="text-sm opacity-80">Build strength through movement, mastery through variety.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 bg-white shadow px-3 py-2 rounded-xl">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5"
+                    checked={includeAdvanced}
+                    onChange={(e) => setIncludeAdvanced(e.target.checked)}
+                  />
+                  <span className="text-sm font-medium">Include advanced</span>
+                </label>
+                <button
+                  onClick={() => setSeed(Date.now())}
+                  className="px-4 py-2 rounded-xl shadow bg-black text-white hover:opacity-90"
+                >
+                  Generate
+                </button>
+              </div>
+            </header>
+
+            <Section title={part1.title} note={part1.note}>
+              <ul className="list-disc list-inside text-sm opacity-80">
+                <li>Timebox: 10 minutes.</li>
+                <li>Left & right. Quality over quantity.</li>
+              </ul>
+            </Section>
+
+            <Section title={part2.title} note={part2.note}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {part2.blocks.map((b) => (
+                  <BlockCard key={b.pattern} {...b} />
+                ))}
+              </div>
+            </Section>
+
+            <Section title={part3.title} note="One intensive exercise; rotates per session.">
+              <div className="rounded-xl bg-white shadow p-4 flex items-start justify-between">
+                <div>
+                  <div className="text-xs uppercase tracking-widest opacity-60">Family {part3.family}</div>
+                  <div className="text-lg font-semibold">{part3.exercise}</div>
+                  <div className="text-sm opacity-80">{part3.format.label}</div>
+                  <div className="text-xs opacity-70">{part3.setDesc}</div>
+                  <div className="text-xs opacity-70 mt-1">10 minutes OTM / EMOM style.</div>
+                </div>
+                {part3.advanced && (
+                  <span className="text-xs px-2 py-1 h-fit rounded-full bg-amber-100 text-amber-900">Advanced</span>
+                )}
+              </div>
+            </Section>
+
+            <section className="rounded-2xl bg-white shadow p-5">
+              <h2 className="text-xl font-semibold">Progression & Weight Selection</h2>
+              <ul className="mt-2 text-sm opacity-80 list-disc list-inside">
+                <li>{bells.startRule}</li>
+                <li>{bells.progressRule}</li>
+                <li>Get Up bell matches Part 2. Build: 3×(1+1) → 5×(1+1) → 3×(2+2).</li>
+              </ul>
+            </section>
+
+            <footer className="text-xs opacity-60 pt-2">
+              <div>Each session ~50 minutes • Train every other day or 3–4×/week • Track volume, recovery, and technique.</div>
+            </footer>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<RiseApp />);
+  </script>
+</body>
+</html>
