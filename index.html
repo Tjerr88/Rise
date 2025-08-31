@@ -4,523 +4,1075 @@
   <meta charset="UTF-8" />
   <title>Rise</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <meta name="theme-color" content="#0b0f19"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={darkMode:'class'}</script>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     :root { color-scheme: light dark; }
-    html,body { height: 100%; }
-    body {
-      -webkit-font-smoothing: antialiased;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+    body { -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    .btn { border-radius:.9rem; padding:.7rem 1rem; }
+    .btn-sm { border-radius:.7rem; padding:.5rem .75rem; font-size:.9rem; }
+    .card { background:#fff; border:1px solid rgba(0,0,0,.08); }
+    html.dark .card { background:#0f172a; border-color: rgba(255,255,255,.12); }
+    .tab-btn { padding:.5rem .8rem; border-radius:.6rem; }
+    .tab-btn.active { background:#2563eb; color:#fff; }
+    html.dark .tab-btn:not(.active){ color:#e5e7eb; }
+    .disclosure { transition:max-height .25s ease; overflow:hidden; }
+    .card-click { cursor:pointer; }
+    .triangle { width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:12px solid currentColor; }
+    .marker { display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; }
+    .toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); padding:.6rem .9rem; border-radius:.7rem; background:#111827; color:#fff; font-size:.9rem; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+    .badge { border:1px solid rgba(0,0,0,.12); padding:.15rem .45rem; border-radius:.5rem; font-size:.72rem; }
+    html.dark .badge { border-color: rgba(255,255,255,.18); }
+
+    /* Recovery modal readability */
+    .recovery-modal .label, .recovery-modal .hint, .recovery-modal .value { color:#0f172a; }
+    html.dark .recovery-modal .label, html.dark .recovery-modal .hint, html.dark .recovery-modal .value { color:#e5e7eb; }
+    .recovery-modal .scale-btn {
+      color:#0f172a; background:#e5e7eb; border:1px solid rgba(0,0,0,.15); border-radius:.5rem; padding:.45rem .7rem; font-size:.9rem;
     }
-    .btn { border-radius:.9rem; padding:.85rem 1rem; }
-    .btn-sm { border-radius:.7rem; padding:.6rem .8rem; font-size:.95rem; }
-    .safe { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+    html.dark .recovery-modal .scale-btn {
+      color:#e5e7eb; background:#1f2937; border-color:rgba(255,255,255,.18);
+    }
+    .recovery-modal .scale-btn.active { background:#2563eb !important; color:#fff !important; }
+
+    /* Short session banner */
+    .mode-short-banner {
+      background: linear-gradient(180deg,#f59e0b1a,#f59e0b0f);
+      border:1px solid rgba(245,158,11,.45);
+      color:#1f2937;
+    }
+    html.dark .mode-short-banner{
+      background: linear-gradient(180deg,rgba(245,158,11,.16),rgba(245,158,11,.08));
+      border-color: rgba(245,158,11,.55);
+      color:#fde68a;
+    }
+
+    .set-list label { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.45rem .6rem; border-radius:.6rem; }
+    .set-list label:hover { background:rgba(0,0,0,.04); }
+    html.dark .set-list label:hover { background:rgba(255,255,255,.06); }
+
+    .hist-row { border-bottom:1px solid rgba(0,0,0,.08); }
+    html.dark .hist-row { border-color:rgba(255,255,255,.12); }
   </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
-  <div id="root" class="safe py-3"></div>
+<body class="bg-slate-100 dark:bg-slate-900 dark:text-slate-100 min-h-screen">
+  <div class="max-w-3xl mx-auto px-4 py-4">
+    <!-- Topbar -->
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-bold">Rise</h1>
+      <div class="flex items-center gap-2">
+        <span id="bellBadge" class="badge text-xs">Bell L1</span>
+        <button id="btnDark" class="text-xs underline">Dark</button>
+      </div>
+    </div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    <!-- Tabs -->
+    <div class="mt-3 flex gap-2">
+      <button data-tab="train" class="tab-btn active">Train</button>
+      <button data-tab="ks" class="tab-btn">Kalos Sthenos</button>
+      <button data-tab="history" class="tab-btn">History</button>
+      <button data-tab="settings" class="tab-btn">Settings</button>
+    </div>
 
-    /* ============== Storage & Utils ============== */
-    function lsGet(k, f){ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): f; } catch(e){ return f; } }
-    function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+    <!-- TRAIN -->
+    <div id="tab-train" class="mt-3">
+      <section class="card rounded-xl">
+        <header class="px-4 py-3 border-b border-black/10 dark:border-white/10 flex justify-between">
+          <h2 id="sessTitle" class="font-semibold">Session —</h2>
+          <div class="flex gap-2">
+            <button id="btnGenerate" class="btn bg-blue-600 text-white">Generate</button>
+            <button id="btnComplete" class="btn bg-green-600 text-white">Complete</button>
+          </div>
+        </header>
+        <div class="p-4">
+          <div id="shortBanner" class="hidden"></div>
 
-    function fmtHMS(secs){
-      const s=Math.max(0,Math.floor(secs));
-      const hh=('0'+Math.floor(s/3600)).slice(-2);
-      const mm=('0'+Math.floor((s%3600)/60)).slice(-2);
-      const ss=('0'+(s%60)).slice(-2);
-      return `${hh}:${mm}:${ss}`;
-    }
+          <section id="part1" class="card rounded-xl p-3">
+            <h3 class="font-semibold">Part 1 — Get-ups (10 min)</h3>
+            <div id="p1Text" class="mt-2 text-sm"></div>
+          </section>
 
-    // Smart list renderer met support voor witregels (lege string)
-    function renderSmartList(lines){
-      if(!lines) return null;
-      return (
-        <div className="space-y-1">
-          {lines.map((t,i)=>(
-            (String(t).trim()==="")
-              ? <div key={i} className="h-2" />
-              : <p key={i} className={String(t).startsWith("  ") ? "pl-4" : ""}>{t}</p>
-          ))}
+          <section id="part2" class="card rounded-xl p-3 mt-3">
+            <h3 class="font-semibold">Part 2 — Circuit (25 min)</h3>
+            <div id="meta2" class="text-xs text-slate-600 dark:text-slate-400 mt-1"></div>
+            <div id="p2List" class="mt-2 grid sm:grid-cols-2 gap-2"></div>
+          </section>
+
+          <section id="part3" class="card rounded-xl p-3 mt-3">
+            <h3 class="font-semibold">Part 3 — Finisher</h3>
+            <div id="meta3" class="text-xs text-slate-600 dark:text-slate-400 mt-1"></div>
+            <div id="p3List" class="mt-2 grid sm:grid-cols-2 gap-2"></div>
+          </section>
         </div>
-      );
-    }
+      </section>
+    </div>
 
-    function CalmCard({ title, subtitle, headerRight, children, footer }) {
-      return (
-        <section className="rounded-xl border border-black/10 dark:border-white/10">
-          {(title || subtitle || headerRight) && (
-            <div className="px-3 pt-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  {title && <h2 className="text-lg font-semibold">{title}</h2>}
-                  {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
-                </div>
-                {headerRight && <div className="pt-1">{headerRight}</div>}
-              </div>
-            </div>
-          )}
-          <div className="px-3 py-3">{children}</div>
-          {footer && <div className="px-3 pb-3">{footer}</div>}
-        </section>
-      );
-    }
+    <!-- KS -->
+    <div id="tab-ks" class="hidden mt-3">
+      <div id="ksLibrary"></div>
+    </div>
 
-    function Timer({ elapsed, setElapsed, running, setRunning }) {
-      const ref=useRef(null);
-      useEffect(()=>{
-        if(running){ ref.current=setInterval(()=>setElapsed(t=>t+1),1000); }
-        else if(ref.current){ clearInterval(ref.current); ref.current=null; }
-        return ()=>{ if(ref.current){ clearInterval(ref.current); ref.current=null; } };
-      },[running,setElapsed]);
-      return (
-        <div>
-          <p className="text-2xl font-mono text-center">{fmtHMS(elapsed)}</p>
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            <button className="btn bg-green-600" onClick={()=>setRunning(true)}>Start</button>
-            <button className="btn bg-yellow-500 text-black" onClick={()=>setRunning(false)}>Stop</button>
-            <button className="btn bg-gray-600" onClick={()=>{ setElapsed(0); setRunning(false); }}>Reset</button>
+    <!-- HISTORY -->
+    <div id="tab-history" class="hidden mt-3">
+      <section class="card rounded-xl p-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold">History</h3>
+          <div class="flex gap-2">
+            <button id="btnExportJSON" class="btn-sm bg-slate-700 text-white">Export JSON</button>
+            <button id="btnExportCSV" class="btn-sm bg-slate-700 text-white">Export CSV</button>
+            <button id="btnClearHist" class="btn-sm bg-red-700 text-white">Clear All</button>
           </div>
         </div>
-      );
-    }
+        <div id="histList" class="mt-3"></div>
+      </section>
+    </div>
 
-    /* ============== Rise data ============== */
-    // Formats (gewichten)
-    const RISE_FORMAT_WEIGHTS = {
-      'Single Bell (5 - 7 reps @ Medium)': 30,
-      'Rep Ladder (1-2-3-4-5 @ Medium)': 25,
-      'Weight Ladder (5, 3, 2+ Reps @ Light, Medium, Heavy)': 20,
-      'Double Bell (5 - 7 Reps @ 2x Light)': 12,
-      'Timed (20s Max Reps @ Light)': 5,
-      'Uneven Bell (5 - 7 Reps @ Medium and Light)': 8
-    };
-    const RISE_FINISHER_FORMAT_WEIGHTS = {
-      'Single Bell (10 - 20 @ Medium)': 30,
-      'Rep Ladder (5-10-15-20 @ Medium)': 25,
-      'Weight Ladder (10, 10, 5+ @ Light, Medium and Heavy)': 20,
-      'Double Bell (2-4-6-(8-10) @ 2x Light)': 12,
-      'Uneven Weight (5 - 10 @ Light + Medium)': 8,
-      'Timed (20s max reps, 40s rest @ Medium)': 5
-    };
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="hidden mt-3">
+      <section class="card rounded-xl p-4 space-y-4">
+        <div class="flex justify-between">
+          <span>Pull-up bar available</span>
+          <input id="s_pull" type="checkbox">
+        </div>
+        <div class="flex justify-between">
+          <span>Allow advanced exercises</span>
+          <input id="s_adv" type="checkbox">
+        </div>
 
-    // Finishers A/B
-    const RISE_FINISHER_A = ['Swing', 'Snatch', 'High Pull'];
-    const RISE_FINISHER_B = ['Push Press', 'Push Jerk', 'Clean & Jerk'];
+        <div class="border-t border-black/10 dark:border-white/10 pt-3">
+          <h4 class="font-semibold mb-2">Part 2 Formats</h4>
+          <div id="fmtPart2" class="set-list space-y-1"></div>
+        </div>
 
-    // Advanced finishers (zelfde toggle)
-    const FINISHER_ADVANCED = new Set(['Snatch', 'Push Jerk', 'Clean & Jerk']);
+        <div class="border-t border-black/10 dark:border-white/10 pt-3">
+          <h4 class="font-semibold mb-2">Finisher Formats — A/B (Ballistic)</h4>
+          <div id="fmtFinAB" class="set-list space-y-1"></div>
+        </div>
 
-    // Part-2 patronen
-    const RISE_PATTERNS = {
-      'Squat': ['Front Squat','Hack Squat','Cossack Squat','B-Stance Goblet Squat','Step Up','(Box) Pistol'],
-      'Pull': ['Tactical Pull Up','Chin Up','Small Row','Wide Row','Dead Clean','Low Pull Snatch'],
-      'Hinge': ['Deadstop Swing','Sumo Deadlift','Side Step Swing','B-Stance Goodmorning','Single Leg Deadlift','Single Leg Glute Bridge'],
-      'Push': ['Military Press','Half Kneeling Press','Floor Press','Power Push Up','Push Press','Push Jerk'],
-      'Lunge': ['Front Lunge','Reverse Lunge','Side Lunge','Curtsy Lunge','Tactical Lunge','Athletic Lunge'],
-      'Rotation': ['Half Kneeling Rotation','Get Up Sit Up','Windmill','Half Kneeling Windmill','Bent Press','Russian Twist'],
-      'Anti-Rotation': ['Suitcase Deadlift','Plank Pull Through','Half Kneeling Lift','Renegade Row','Elevated Push Up','Bottom Up Squat'],
-      'Loaded Carry': ['Suitcase Carry','Front Rack Carry','Overhead Carry','Bottom Up Carry','Bear Crawl','Cook Drill']
-    };
+        <div class="border-t border-black/10 dark:border-white/10 pt-3">
+          <h4 class="font-semibold mb-2">Finisher Formats — C (Carry)</h4>
+          <div id="fmtFinC" class="set-list space-y-1"></div>
+        </div>
+      </section>
+    </div>
+  </div>
 
-    // Advanced set (Part 2)
-    const ADVANCED = new Set([
-      // Squat
-      'Hack Squat','Cossack Squat',
-      // Hinge
-      'B-Stance Goodmorning','Side Step Swing',
-      // Lunge
-      'Athletic Lunge',
-      // Rotation
-      'Bent Press','Windmill',
-      // Loaded Carry
-      'Bottom Up Carry'
-      // Pull/Push/Anti-Rotation: geen advanced
-    ]);
+  <!-- Recovery Modal -->
+  <dialog id="recModal" class="recovery-modal rounded-xl p-0 w-[460px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
+    <div class="p-4 border-b border-black/10 dark:border-white/10">
+      <h3 class="font-semibold label">Daily Recovery Check</h3>
+      <p class="text-xs hint opacity-80">Your score sets today’s plan.</p>
+    </div>
+    <div class="p-4 space-y-3">
+      <div>
+        <div class="label font-medium mb-1">Sleep Quality</div>
+        <div class="flex flex-wrap gap-2" id="sSleep"></div>
+        <div class="value text-xs mt-1 opacity-80" id="sSleepDesc"></div>
+      </div>
+      <div>
+        <div class="label font-medium mb-1">Energy</div>
+        <div class="flex flex-wrap gap-2" id="sEnergy"></div>
+        <div class="value text-xs mt-1 opacity-80" id="sEnergyDesc"></div>
+      </div>
+      <div>
+        <div class="label font-medium mb-1">Body Readiness</div>
+        <div class="flex flex-wrap gap-2" id="sBody"></div>
+        <div class="value text-xs mt-1 opacity-80" id="sBodyDesc"></div>
+      </div>
+      <div class="text-sm">Total: <span id="sTotal">0</span> → <strong id="sDecision">—</strong></div>
+    </div>
+    <div class="p-4 border-t border-black/10 dark:border-white/10 flex gap-2">
+      <button id="recCancel" class="btn bg-slate-600 text-white w-1/2">Cancel</button>
+      <button id="recConfirm" class="btn bg-blue-600 w-1/2 text-white">Continue</button>
+    </div>
+  </dialog>
 
-    // Oefeningen die bij Double/Uneven als single-bell only moeten
-    const SINGLE_BELL_ONLY = new Set([
-      'Get Up Sit Up',
-      'Half Kneeling Windmill',
-      'Bent Press',
-      'Russian Twist',
-      // alles uit Anti-Rotation:
+  <!-- Recovery Choice Modal -->
+  <dialog id="recChoice" class="rounded-xl p-0 w-[420px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
+    <div class="p-4 border-b border-black/10 dark:border-white/10">
+      <h3 class="font-semibold">Choose Recovery</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">Pin one for today.</p>
+    </div>
+    <div class="p-4 flex flex-col gap-2">
+      <button class="btn bg-slate-700 text-white" data-recov="gfm">GFM Flow</button>
+      <button class="btn bg-slate-700 text-white" data-recov="zone2">Zone 2</button>
+      <button class="btn bg-slate-700 text-white" data-recov="ks">Kalos Sthenos</button>
+    </div>
+  </dialog>
+
+  <!-- Progression Modal -->
+  <dialog id="progModal" class="rounded-xl p-0 w-[420px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
+    <div class="p-4 border-b border-black/10 dark:border-white/10">
+      <h3 class="font-semibold">Progression Check</h3>
+      <p id="progQuestion" class="text-sm text-slate-600 dark:text-slate-300 mt-1"></p>
+    </div>
+    <div class="p-4 flex gap-2">
+      <button id="progNo"  class="btn bg-slate-600 text-white w-1/2">Not yet</button>
+      <button id="progYes" class="btn bg-emerald-600 text-white w-1/2">Yes</button>
+    </div>
+  </dialog>
+
+  <script>
+    /* ====== Utils ====== */
+    const $  = (q,root=document)=>root.querySelector(q);
+    const $$ = (q,root=document)=>Array.from(root.querySelectorAll(q));
+    const lsGet=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f;}catch{return f}};
+    const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+    function uuid(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8); return v.toString(16);});}
+    function nowISO(){ return new Date().toISOString(); }
+    function fmtDate(d){ const dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0'), yy=d.getFullYear(); const hh=String(d.getHours()).padStart(2,'0'), mi=String(d.getMinutes()).padStart(2,'0'); return `${dd}-${mm}-${yy} ${hh}:${mi}`; }
+    function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
+
+    /* ====== Prefs & Bell ====== */
+    let prefs = lsGet('rise:prefs', {
+      pullupBar:true, allowAdvanced:true, dark:true,
+      recSleep:null, recEnergy:null, recBody:null
+    });
+    function savePrefs(){ lsSet('rise:prefs', prefs); }
+    let bell = lsGet('rise:bellLevel', 1);
+    function setBell(n){ bell = Math.max(1, n|0); lsSet('rise:bellLevel', bell); reflectBellInHeader(); }
+    function reflectBellInHeader(){ $('#bellBadge').textContent = `Bell L${bell}`; }
+
+    /* === Format enable maps === */
+    const DEFAULT_FMT_ENABLED = lsGet('rise:fmtEnabled', {
+      single:true, repLadder:true, weightLadder:true, double:true, timed:true, uneven:true
+    });
+    const DEFAULT_FIN_AB_ENABLED = lsGet('rise:finABEnabled', {
+      f_single:true, f_rpladder:true, f_wladder:true, f_double:true, f_uneven:true, f_timed:true
+    });
+    const DEFAULT_FIN_C_ENABLED = lsGet('rise:finCEnabled', {
+      c_single:true, c_double:true, c_uneven:true, c_wladder:true, c_timed:true, c_rpladder:true
+    });
+    function setFmtEnabled(map){ lsSet('rise:fmtEnabled', map); }
+    function setFinABEnabled(map){ lsSet('rise:finABEnabled', map); }
+    function setFinCEnabled(map){ lsSet('rise:finCEnabled', map); }
+
+    /* ====== Single-bell rules ====== */
+    const SINGLE_ONLY = new Set([
+      'Tactical Lunge',
+      'Deadstop Side Swing','Get Up Sit Up','Windmill','Half Kneeling Windmill','Bent Press','Figure 8','Russian Twist',
+      'B-Stance Goodmorning',
       'Suitcase Deadlift','Plank Pull Through','Half Kneeling Lift','Renegade Row','Elevated Push Up','Bottom Up Squat'
     ]);
+    const EXCEPT_ALLOW_DOUBLE = new Set(['Bottom Up Squat']);
 
-    /* ============== RNG & helpers ============== */
-    function xmur3(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return ()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return (h^h>>>16)>>>0;};}
-    function sfc32(a,b,c,d){return function(){a>>>0;b>>>0;c>>>0;d>>>0;var t=(a+b|0)+d|0;d=d+1|0;a=b^b>>>9;b=c+(c<<3)|0;c=(c<<21|c>>>11);c=c+t|0;return (t>>>0)/4294967296;};}
-    function rngFromSeed(seedStr){ const seed=xmur3(seedStr); return sfc32(seed(),seed(),seed(),seed()); }
-    function shuffleRng(arr, rng){
-      const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a;
+    /* ====== Exercise cues ====== */
+    const EX_CUES = {
+      "Front Squat":"Front rack; tall torso; sit between heels.",
+      "Hack Squat":"Heels elevated; knees forward; stay tall.",
+      "Goblet Squat":"Bell at chest; ribs down; knees track toes.",
+      "Cossack Squat":"Wide stance; sit over heel; chest up.",
+      "B-Stance Goblet Squat":"Rear foot light; front leg drives.",
+      "Step Up":"Whole foot on box; control the lower.",
+      "Pistol Squat (Box)":"Sit to box; balance; smooth tempo.",
+      "Tactical Pull Up":"Pack shoulders; no kipping; full ROM.",
+      "Chin Up":"Supinated grip; chest to bar.",
+      "Small Row":"Elbow close; pause at top.",
+      "Wide Row":"Elbow flares; pull to ribs.",
+      "Dead Clean":"Snap; float; soft rack.",
+      "Low Pull Snatch":"Hips snap; elbow high/outside.",
+      "High Pull":"Hips drive; elbow high/outside.",
+      "KB Floor Pullover":"Arms long; pull from lats; ribs down.",
+      "Goblet Curl":"Elbows down; squeeze; smooth lower.",
+      "Deadstop Swing":"Reset each rep; hinge hard; snap.",
+      "Sumo Deadlift":"Wide stance; push floor away.",
+      "Side Step Swing":"Step side between swings; posture tall.",
+      "B-Stance Goodmorning":"Hinge; rear foot light; long spine.",
+      "Single Leg Deadlift":"Soft knee; hips square; reach long.",
+      "Single Leg Glute Bridge":"Drive heel; keep pelvis level.",
+      "Military Press":"Glutes tight; ribs down; vertical press.",
+      "Half Kneeling Press":"90/90 base; no side bend.",
+      "Floor Press":"Elbows ~45°; forearm vertical.",
+      "Power Push Up":"Rigid plank; strong push.",
+      "Push Press":"Dip-drive; lockout vertical.",
+      "Push Jerk":"Dip-jump-catch; fast lockout.",
+      "Top Down Press":"Lower from lockout; control path.",
+      "Front Lunge":"Step forward; shin vertical.",
+      "Reverse Lunge":"Step back; balance steady.",
+      "Side Lunge":"Hips back to side; heel down.",
+      "Curtsy Lunge":"Cross behind lightly; pelvis square.",
+      "Tactical Lunge":"Pass bell under front leg; stay tall.",
+      "Athletic Lunge":"Dynamic step; stable trunk.",
+      "Overhead Lunge":"OH lockout; small steps; tall chest.",
+      "Deadstop Side Swing":"Hinge/rotate; eyes on bell.",
+      "Get Up Sit Up":"Roll to elbow; tall chest.",
+      "Windmill":"Hinge lateral; stack the shoulder.",
+      "Half Kneeling Windmill":"Shin vertical; rotate under bell.",
+      "Bent Press":"Wedge under bell; vertical arm.",
+      "Figure 8":"Pass bell between legs; flat back.",
+      "Russian Twist":"Tall chest; rotate from ribs.",
+      "Suitcase Deadlift":"Bell by side; even hips; packed shoulder.",
+      "Plank Pull Through":"Plank; drag bell; resist rotation.",
+      "Half Kneeling Lift":"Low to high; pelvis steady.",
+      "Renegade Row":"Row without twisting; tight glutes.",
+      "Elevated Push Up":"Body straight; control speed.",
+      "Bottom Up Squat":"BU bell; slow & controlled.",
+      "Suitcase Carry":"Single bell; level hips; quiet steps.",
+      "Front Rack Carry":"Elbows in; ribs down; nasal breathing.",
+      "Overhead Carry":"Lockout vertical; centrated shoulder.",
+      "Bottom Up Carry":"Light grip; precision; slow steps.",
+      "Bear Crawl":"Hips low; small steps; quiet core.",
+      "Cook Drill":"Carry variations with posture stops."
+    };
+
+    /* ====== Patterns (Loaded Carry NOT in Part 2) ====== */
+    function EX(name, opt={}){ return { name, advanced:false, singleOnly:false, pullup:false, ...opt }; }
+    function markSingles(item){
+      if (SINGLE_ONLY.has(item.name) && !EXCEPT_ALLOW_DOUBLE.has(item.name)) item.singleOnly = true;
+      return item;
     }
-    function pickWeightedNot(weightsObj, avoid, rng){
-      const keys=Object.keys(weightsObj), w=keys.map(k=>weightsObj[k]);
-      if(keys.length===1) return keys[0];
-      let guard=0;
-      while(guard++<200){
-        const sum=w.reduce((a,b)=>a+b,0);
-        let r=rng()*sum, idx=0;
-        for(let i=0;i<w.length;i++){ r-=w[i]; if(r<=0){ idx=i; break; } }
-        const cand=keys[idx];
-        if(cand!==avoid) return cand;
+    const PATTERNS = {
+      'Squat': [
+        markSingles(EX('Front Squat')),
+        markSingles(EX('Hack Squat', { advanced:true, replacement:'Goblet Squat' })),
+        markSingles(EX('Goblet Squat')),
+        markSingles(EX('Cossack Squat', { advanced:true, replacement:'Box Step Over' })),
+        markSingles(EX('B-Stance Goblet Squat')),
+        markSingles(EX('Step Up')),
+        markSingles(EX('Pistol Squat (Box)'))
+      ],
+      'Pull': [
+        markSingles(EX('Tactical Pull Up', { pullup:true, replacement:'KB Floor Pullover' })),
+        markSingles(EX('Chin Up', { pullup:true, replacement:'Goblet Curl' })),
+        markSingles(EX('Small Row')),
+        markSingles(EX('Wide Row')),
+        markSingles(EX('Dead Clean')),
+        markSingles(EX('Low Pull Snatch', { advanced:true, replacement:'High Pull' }))
+      ],
+      'Hinge': [
+        markSingles(EX('Deadstop Swing')),
+        markSingles(EX('Sumo Deadlift')),
+        markSingles(EX('Side Step Swing')),
+        markSingles(EX('B-Stance Goodmorning')),
+        markSingles(EX('Single Leg Deadlift')),
+        markSingles(EX('Single Leg Glute Bridge'))
+      ],
+      'Push': [
+        markSingles(EX('Military Press')),
+        markSingles(EX('Half Kneeling Press')),
+        markSingles(EX('Floor Press')),
+        markSingles(EX('Power Push Up')),
+        markSingles(EX('Push Press')),
+        markSingles(EX('Push Jerk', { advanced:true, replacement:'Top Down Press' }))
+      ],
+      'Lunge': [
+        markSingles(EX('Front Lunge')),
+        markSingles(EX('Reverse Lunge')),
+        markSingles(EX('Side Lunge')),
+        markSingles(EX('Curtsy Lunge')),
+        markSingles(EX('Tactical Lunge', { singleOnly:true })),
+        markSingles(EX('Athletic Lunge', { advanced:true, replacement:'Overhead Lunge' }))
+      ],
+      'Rotation': [
+        markSingles(EX('Deadstop Side Swing')),
+        markSingles(EX('Get Up Sit Up')),
+        markSingles(EX('Windmill')),
+        markSingles(EX('Half Kneeling Windmill')),
+        markSingles(EX('Bent Press', { advanced:true, replacement:'Figure 8' })),
+        markSingles(EX('Russian Twist'))
+      ],
+      'Anti-Rotation': [
+        markSingles(EX('Suitcase Deadlift')),
+        markSingles(EX('Plank Pull Through')),
+        markSingles(EX('Half Kneeling Lift')),
+        markSingles(EX('Renegade Row')),
+        markSingles(EX('Elevated Push Up')),
+        markSingles(EX('Bottom Up Squat'))
+      ]
+    };
+
+    /* ====== Formats ====== */
+    const FORMATS = [
+      { id:'single',       label:'Single Bell (5–7 reps @ Medium)',                     weight:30, meta:'5–7 reps • Medium' },
+      { id:'repLadder',    label:'Rep Ladder (1–2–3–4–5 @ Medium)',                     weight:25, meta:'Rep Ladder 1–2–3–4–5 @ Medium' },
+      { id:'weightLadder', label:'Weight Ladder (5, 3, 2+ @ Light, Medium, Heavy)',     weight:20, meta:'Weight Ladder (5@L, 3@M, 2+@H)' },
+      { id:'double',       label:'Double Bell (5–7 reps @ 2× Light)',                   weight:12, meta:'Double Bell (5–7 reps @ 2× Light)' },
+      { id:'timed',        label:'Timed (20s max reps @ Light)',                         weight:5,  meta:'Timed (20s max reps @ Light)' },
+      { id:'uneven',       label:'Uneven Bell (5–7 reps @ Medium & Light)',              weight:8,  meta:'Uneven Bell (5–7 reps @ Medium & Light)' },
+    ];
+    const LS_PREV_FORMAT = 'rise_prev_format_v1';
+
+    /* ====== Finisher formats ====== */
+    const CARRIES = ['Suitcase Carry','Front Rack Carry','Overhead Carry','Bottom Up Carry','Bear Crawl','Cook Drill'];
+    const CARRY_FORMATS = [
+      { id:'c_single',   label:'Single bell — Max meters in 10 min',               meta:'Single bell — Max meters in 10 min' },
+      { id:'c_double',   label:'Double bell — Max meters in 10 min',               meta:'Double bell — Max meters in 10 min' },
+      { id:'c_uneven',   label:'Uneven bell — Max meters in 10 min (switch rest)', meta:'Uneven bell — Max meters in 10 min (switch rest)' },
+      { id:'c_wladder',  label:'Weight ladder — H → M → L (max meters each)',      meta:'Weight ladder — H → M → L (max meters each)' },
+      { id:'c_timed',    label:'Timed — 40s carry / 20s rest',                     meta:'Timed — 40s carry / 20s rest' },
+      { id:'c_rpladder', label:'Rep ladder — 50m R, 50m L, 100m R, 100m L, …',     meta:'Rep ladder — 50m R, 50m L, 100m R, 100m L, …' },
+    ];
+    const FIN_A_EX = ['Push Press','Push Jerk','Clean & Press'];
+    const FIN_B_EX = ['Snatch','(Two-arm) Swing'];
+    const FIN_BALLISTIC_FORMATS = [
+      { id:'f_single',   label:'Single Bell (10–20 @ Medium)',           meta:'Single Bell (10–20 @ Medium)' },
+      { id:'f_rpladder', label:'Rep Ladder (5–10–15–20 @ Medium)',       meta:'Rep Ladder (5–10–15–20 @ Medium)' },
+      { id:'f_wladder',  label:'Weight Ladder (10, 10, 5+ @ L, M, H)',    meta:'Weight Ladder (10, 10, 5+ @ L, M, H)' },
+      { id:'f_double',   label:'Double Bell (2–4–6–(8–10) @ 2× Light)',   meta:'Double Bell (2–4–6–(8–10) @ 2× Light)' },
+      { id:'f_uneven',   label:'Uneven (5–10 @ L + M)',                   meta:'Uneven (5–10 @ L + M)' },
+      { id:'f_timed',    label:'Timed (20s max reps, 40s rest @ Medium)', meta:'Timed (20s max reps, 40s rest @ Medium)' },
+    ];
+    const LS_FIN_GROUP = 'rise:finisher_group_v1';
+    const LS_PREV_FINISHER_FMT = 'rise:prev_finisher_fmt_v1';
+
+    /* ====== KS Level 1 ====== */
+    const KS1 = {
+      "Roll to Press": ["Wrist Turns","Neck Rotations","Arm Bar","Diagonal Hip Stretch","Roll to Press Movement"],
+      "Press to Elbow": ["Diagonal (bend knee) to press hand","Neck Rotations","Thoracic Waves","Shoulder Rotations","Press to Elbow"],
+      "Elbow to Post": ["Active Straight Leg Raise","Neck Rotations","Shoulder Rotations","Elbow to Post"],
+      "Post to High Pelvis": ["Prone Push Up","The Bow","Bridge Isolation","Post to High Pelvis"],
+      "High Pelvis to Bend Knee": ["Kneeling Windmill","Kneeling Dorsiflexion","Neck and Shoulder Rotations","High Pelvis to Bend"],
+      "Knee to Half Kneel": ["Brettzell 1.0","Half kneeling 2 handed Bottom Up Press","Half Kneeling Overhead Rotations","Tall Kneeling to Half Kneeling"],
+      "Half Kneel to Stand": ["Small stance Split Squat","Split Stance Rotational Bottom Up press","Overhead Rotations"]
+    };
+    const KS1_CUES = {
+      "Wrist Turns":"Rotate wrists both directions; relaxed forearms.",
+      "Neck Rotations":"Turn head gently left/right; breathe.",
+      "Arm Bar":"Press & roll; packed shoulder; eyes on bell.",
+      "Diagonal Hip Stretch":"Open hip on diagonal; pelvis and chest open.",
+      "Roll to Press Movement":"Roll from floor to side while pressing.",
+      "Diagonal (bend knee) to press hand":"Drive bent knee; post hand with ribs down.",
+      "Thoracic Waves":"Segmental flex/extend; small and smooth.",
+      "Shoulder Rotations":"Rotate humerus with control; no shrug.",
+      "Press to Elbow":"Press; post to elbow; vertical wrist.",
+      "Active Straight Leg Raise":"Lift straight leg; other stays quiet.",
+      "Elbow to Post":"From elbow to hand post; shoulder packed.",
+      "Prone Push Up":"Press to low cobra; shoulders away from ears.",
+      "The Bow":"Gentle anterior line opener.",
+      "Bridge Isolation":"Glutes lift, spine long.",
+      "Post to High Pelvis":"From post, hike hips high; stack shoulder.",
+      "Kneeling Windmill":"Hinge/rotate; eyes on bell.",
+      "Kneeling Dorsiflexion":"Rock forward; heel down.",
+      "Neck and Shoulder Rotations":"Slow rotations; jaw relaxed.",
+      "High Pelvis to Bend":"Fold to bent-knee with control.",
+      "Brettzell 1.0":"Thoracic + hip opener; breathe.",
+      "Half kneeling 2 handed Bottom Up Press":"Two-hand BU press; tall spine.",
+      "Half Kneeling Overhead Rotations":"Rotate under OH arm; pelvis steady.",
+      "Tall Kneeling to Half Kneeling":"Smooth transition; knee under hip.",
+      "Small stance Split Squat":"Narrow split; control depth.",
+      "Split Stance Rotational Bottom Up press":"Press BU while rotating; brace.",
+      "Overhead Rotations":"Rotate gently under overhead arm."
+    };
+
+    /* ====== KS Level 2 (Advanced) ====== */
+    const KS2 = {
+      "Shoulder Openers": [
+        "Bent Arm Bar (advanced)","Bent Arm Bar Rotations (advanced)",
+        "Sideways Overhead Stretch","Sideways OH Stretch — Wrist Rotations","Sideways OH Stretch — Hip Bridge"
+      ],
+      "Hip Openers": [
+        "ASLR (advanced)","ASLR — Ankle Rotations","ASLR — Leg Rotations",
+        "Opposite Arm & Leg Rotation","ASLR — Circles","ASLR — Hip Bridge","ASLR — Lower-leg Extension",
+        "Everything Bottom Up (advanced²)"
+      ],
+      "Half-Kneeling": [
+        "Half-Kneeling Press","HK Press + Thoracic Rotation","HK Press in Rotation",
+        "HK Press, Opposite Hand Behind Back","Tall-Kneeling Halo","Half-Kneeling Halo"
+      ],
+      "Windmill": [
+        "HK Windmill to Hand","Railroad Windmill to Hand","HK Windmill to Elbow","Railroad Windmill to Elbow"
+      ],
+      "Bretzell 2.0": [
+        "Bretzell 2.0 + Push Up","Bretzell 2.0 + One-arm Push Up","Bretzell 2.0 — Upperleg Extended",
+        "Bretzell 2.0 — Fingertip Under Base Hand, Side Bend"
+      ]
+    };
+    const KS2_CUES = {
+      "Bent Arm Bar (advanced)":"Elbow flexed; pack shoulder; small range.",
+      "Bent Arm Bar Rotations (advanced)":"Rotate under load; slow; breathe.",
+      "Sideways Overhead Stretch":"Long line under OH arm; gentle reach.",
+      "Sideways OH Stretch — Wrist Rotations":"Keep elbow locked; rotate wrist.",
+      "Sideways OH Stretch — Hip Bridge":"Press hips high under stable OH arm.",
+      "ASLR (advanced)":"Slow straight-leg raise; pelvis quiet.",
+      "ASLR — Ankle Rotations":"Circle ankle while leg raised.",
+      "ASLR — Leg Rotations":"Rotate femur in socket; control.",
+      "Opposite Arm & Leg Rotation":"Diagonal rotation; brace.",
+      "ASLR — Circles":"Small controlled hip circles.",
+      "ASLR — Hip Bridge":"Bridge with raised leg; stable pelvis.",
+      "ASLR — Lower-leg Extension":"Extend knee while hip flexed.",
+      "Everything Bottom Up (advanced²)":"Perform sequence Bottom-Up; light bell.",
+      "Half-Kneeling Press":"Solid 90/90 base; vertical press.",
+      "HK Press + Thoracic Rotation":"Press then rotate; pelvis steady.",
+      "HK Press in Rotation":"Maintain rotation while pressing.",
+      "HK Press, Opposite Hand Behind Back":"Add constraint; posture tall.",
+      "Tall-Kneeling Halo":"Smooth halo; ribs down.",
+      "Half-Kneeling Halo":"Same, lower base.",
+      "HK Windmill to Hand":"Hinge lateral to hand post.",
+      "Railroad Windmill to Hand":"Feet inline; reach to hand post.",
+      "HK Windmill to Elbow":"Control descent to elbow.",
+      "Railroad Windmill to Elbow":"Inline stance; rotate to elbow.",
+      "Bretzell 2.0 + Push Up":"Add push-up between positions.",
+      "Bretzell 2.0 + One-arm Push Up":"Advanced strength/rotation.",
+      "Bretzell 2.0 — Upperleg Extended":"Progression; longer lever.",
+      "Bretzell 2.0 — Fingertip Under Base Hand, Side Bend":"Fine shoulder stacking."
+    };
+
+    /* ====== Helpers ====== */
+    function listEnabled(base, map){ return base.filter(x => (map?.[x.id] ?? true)); }
+    function weightedPick(list){
+      const weights = list.map(f => f.weight ?? 1);
+      const sum = weights.reduce((a,b)=>a+b,0);
+      let r = Math.random()*sum;
+      for (let i=0;i<list.length;i++){ r-=weights[i]; if(r<=0) return list[i]; }
+      return list[list.length-1];
+    }
+    function pickFormat(){
+      const enabledMap = lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED);
+      let pool = listEnabled(FORMATS, enabledMap);
+      if (pool.length===0) pool = [FORMATS.find(f=>f.id==='single')];
+      const prev = lsGet(LS_PREV_FORMAT, null);
+      let pick = weightedPick(pool);
+      if (prev && pool.length>1 && pick.id===prev){
+        const alt = pool.find(f=>f.id!==prev) || pick;
+        pick = alt;
       }
-      return keys[0];
+      lsSet(LS_PREV_FORMAT, pick.id);
+      return pick;
     }
-    function pickNot(list, avoid, rng){
-      if(list.length===1) return list[0];
-      let guard=0;
-      while(guard++<200){
-        const cand=list[Math.floor(rng()*list.length)];
-        if(cand!==avoid) return cand;
-      }
-      return list[0];
+    function pickNoRepeatById(prevId, list) {
+      const pool = prevId ? list.filter(x => x.id !== prevId) : list.slice();
+      return (pool.length ? pool : list)[Math.floor(Math.random() * (pool.length ? pool.length : list.length))];
     }
-    function uuid4(){
-      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{
-        const r=(Math.random()*16)|0, v=c==='x'?r:(r&0x3|0x8); return v.toString(16);
+    function pickDistinct(prev, arr) {
+      const pool = prev ? arr.filter(x => x !== prev) : arr.slice();
+      return (pool.length ? pool : arr)[Math.floor(Math.random()*pool.length)];
+    }
+    function pickExercise(pattern){
+      const list = PATTERNS[pattern].map(it=>{
+        let out = { ...it };
+        if (!prefs.allowAdvanced && it.advanced && it.replacement){ out = { ...it, name: it.replacement, advanced:false }; }
+        if (!prefs.pullupBar && it.pullup && it.replacement){ out = { ...it, name: it.replacement, pullup:false }; }
+        out.singleOnly = SINGLE_ONLY.has(out.name) && !EXCEPT_ALLOW_DOUBLE.has(out.name);
+        return out;
       });
+      const last = lsGet('rise_prev_ex_'+pattern, null);
+      const pool = list.filter(e=>e.name!==last);
+      const pick = (pool.length?pool:list)[Math.floor(Math.random()*(pool.length?pool.length:list.length))];
+      lsSet('rise_prev_ex_'+pattern, pick.name);
+      return pick;
     }
-    function todayKeyAms(){
-      const d=new Date(); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
-      return `${y}-${m}-${day}`;
-    }
-
-    /* ============== Hints (single-bell & carries) ============== */
-    function carryDistanceNote(chosenFormat){
-      if(/Rep Ladder/i.test(chosenFormat)) return "10–20–30–40–50 m";
-      if(/Timed/i.test(chosenFormat)) return "laps van ~20 m tijdens werktijd";
-      return "2 m per rep";
-    }
-    function carryStyleNote(exercise, chosenFormat){
-      const isDouble = /Double Bell/i.test(chosenFormat);
-      const isUneven = /Uneven/i.test(chosenFormat);
-      if(isDouble){
-        if(exercise === 'Suitcase Carry') return "(2x suitcase)";
-        if(exercise === 'Front Rack Carry') return "(double rack)";
-        if(exercise === 'Overhead Carry') return "(double overhead)";
-        // Bottom Up Carry blijft advanced, geen extra style (en geen single-bell warning gevraagd)
-      }
-      if(isUneven){
-        return "(uneven carry: medium + light, switch sides)";
-      }
-      return "";
-    }
-    function hintFor(pattern, exercise, chosenFormat){
-      const isDouble = /Double Bell/i.test(chosenFormat);
-      const isUneven = /Uneven/i.test(chosenFormat);
-      let bits = [];
-
-      if((isDouble || isUneven) && SINGLE_BELL_ONLY.has(exercise)){
-        bits.push("⚠ single-bell only");
-      }
-      if(pattern === 'Loaded Carry'){
-        const style = carryStyleNote(exercise, chosenFormat);
-        const dist  = carryDistanceNote(chosenFormat);
-        if(style) bits.push(style);
-        if(dist)  bits.push(dist);
-      }
-      return bits.length ? "— " + bits.join(" • ") : "";
+    function pickFinGroupNoRepeat(){
+      const last = localStorage.getItem(LS_FIN_GROUP) || null;
+      const groups = ['A','B','C'];
+      const pool = last ? groups.filter(g => g !== last) : groups;
+      const choice = pool[Math.floor(Math.random()*pool.length)];
+      localStorage.setItem(LS_FIN_GROUP, choice);
+      return choice;
     }
 
-    /* ============== Generator ============== */
-    function generateRiseSession({ seed, history }){
-      const rng = rngFromSeed(seed || todayKeyAms());
-      const last = (history && history.length) ? history[history.length-1] : null;
+    /* ====== Recovery scales ====== */
+    const SCALE = {
+      sleep: [
+        "0 – Barely slept, not recovered","1 – Very poor, broken sleep","2 – Restless, short, not refreshed",
+        "3 – Okay, enough to get by","4 – Good, rested","5 – Excellent, fully recovered"
+      ],
+      energy: [
+        "0 – No energy at all","1 – Very low","2 – Low, sluggish",
+        "3 – Okay, manageable","4 – Good, energetic","5 – Excellent, buzzing"
+      ],
+      body: [
+        "0 – Severe pain/injury","1 – Major stiffness/pain","2 – Noticeable stiffness",
+        "3 – Slight stiffness/fatigue","4 – Good, minimal limitations","5 – Excellent, loose & strong"
+      ]
+    };
+    function buildScale(key, into, descInto, val){
+      into.innerHTML = SCALE[key].map((d,i)=>`<button class="scale-btn" data-v="${i}">${i}</button>`).join('');
+      into.onclick = (e)=>{
+        const b = e.target.closest('button'); if(!b) return;
+        const v = parseInt(b.dataset.v,10);
+        prefs[key==='sleep'?'recSleep':key==='energy'?'recEnergy':'recBody']=v; savePrefs();
+        $$('#'+into.id+' button').forEach(btn=>{
+          const on = parseInt(btn.dataset.v,10)===v;
+          btn.classList.toggle('active', on);
+        });
+        descInto.textContent = SCALE[key][v];
+        updateRecSummary();
+      };
+      if (val!=null) { const btn = into.querySelector(`[data-v="${val}"]`); btn && btn.click(); }
+    }
+    function updateRecSummary(){
+      const s=(prefs.recSleep??0)+(prefs.recEnergy??0)+(prefs.recBody??0);
+      $('#sTotal').textContent = s;
+      $('#sDecision').textContent = s>=11 ? 'Train (full session)' : s>=9 ? 'Short session (5/1/5)' : s>=5 ? 'Recovery' : 'Breathing';
+    }
+    function openRecoveryModal(){
+      buildScale('sleep',$('#sSleep'),$('#sSleepDesc'),prefs.recSleep);
+      buildScale('energy',$('#sEnergy'),$('#sEnergyDesc'),prefs.recEnergy);
+      buildScale('body',$('#sBody'),$('#sBodyDesc'),prefs.recBody);
+      updateRecSummary();
+      $('#recModal').showModal();
+    }
+    $('#recCancel').onclick=()=>$('#recModal').close();
 
-      // Formats: niet hetzelfde als vorige
-      const prevFormat = last?.meta?.format || null;
-      const chosenFormat = pickWeightedNot(RISE_FORMAT_WEIGHTS, prevFormat, rng);
+    /* ====== Part 1 copy ====== */
+    function renderPart1Text(){
+      $('#p1Text').innerHTML = `
+        <ul class="list-disc ml-6 space-y-1">
+          <li>10 minutes of quality Get-ups.</li>
+          <li>Use the <strong>same bell</strong> as Part 2.</li>
+          <li>Autoregulate:
+            <div class="mt-1 text-xs text-slate-600 dark:text-slate-300">
+              Progress over time → 3×1+1 → 4×1+1 → 5×1+1 → 1×2+2 + 4×1+1.
+            </div>
+          </li>
+        </ul>`;
+    }
 
-      const prevFinisherFormat = last?.meta?.finisher_format || null;
-      const finisherFormat = pickWeightedNot(RISE_FINISHER_FORMAT_WEIGHTS, prevFinisherFormat, rng);
+    /* ====== KS Library (static cards) ====== */
+    function renderKS1Library(){
+      const items = Object.entries(KS1).flatMap(([step, drills]) =>
+        drills.map(name => ({ step, name, cue: KS1_CUES[name] || "Move smoothly; pain-free range; breathe." }))
+      );
+      $('#ksLibrary').innerHTML = `
+        <section class="card rounded-xl">
+          <header class="px-4 py-3 border-b border-black/10 dark:border-white/10">
+            <h3 class="font-semibold">Kalos Sthenos — Level 1 Library</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Do <strong>1× 5–10 reps</strong> per drill, then move on.</p>
+          </header>
+          <div class="p-4 grid sm:grid-cols-2 gap-3" id="ksGrid">
+            ${items.map((it)=> `
+              <article class="p-3 rounded-lg card card-click" data-desc>
+                <div class="text-[11px] text-slate-600 dark:text-slate-400 mb-1">${it.step}</div>
+                <div class="font-medium">${it.name}</div>
+                <div class="disclosure max-h-0 text-sm italic mt-2" data-body>${it.cue}</div>
+              </article>
+            `).join('')}
+          </div>
+        </section>`;
+    }
 
-      // A/B afwisselen (start met A)
-      const useA = (history?.length ?? 0) % 2 === 0;
-
-      // Laatste A/B finisher zoeken voor anti-herhaling
-      let lastA=null, lastB=null;
-      if(history?.length){
-        for(let i=history.length-1;i>=0;i--){
-          const s=history[i];
-          if(s?.meta?.finisher_group==='A' && !lastA) lastA=s.meta.finisher_exercise;
-          if(s?.meta?.finisher_group==='B' && !lastB) lastB=s.meta.finisher_exercise;
-          if(lastA && lastB) break;
-        }
+    /* ====== KS Generator ====== */
+    // Persist last indices so we can pick different next time
+    // Keys: rise:ks1:last:{step}, rise:ks2:last:{group}
+    function ksPickDifferent(list, lastIdx){
+      if(list.length<=1) return 0;
+      let idx = Math.floor(Math.random()*list.length);
+      if(lastIdx!=null && list.length>1 && idx===lastIdx){
+        idx = (idx+1) % list.length;
       }
-
-      const showAdv = !!window.__SHOW_ADVANCED__;
-      const baseA = RISE_FINISHER_A;
-      const baseB = RISE_FINISHER_B;
-      const poolA = showAdv ? baseA : baseA.filter(x => !FINISHER_ADVANCED.has(x));
-      const poolB = showAdv ? baseB : baseB.filter(x => !FINISHER_ADVANCED.has(x));
-
-      const finisherExercise = useA
-        ? pickNot(poolA.length ? poolA : baseA, lastA, rng)
-        : pickNot(poolB.length ? poolB : baseB, lastB, rng);
-      const finisherGroup = useA ? 'A' : 'B';
-
-      // Part 2 – niet dezelfde oefening per patroon als vorige sessie
-      const prevPart2 = last?.meta?.part2 || {};
-      const part2 = {};
-      Object.keys(RISE_PATTERNS).forEach(p=>{
-        const base = RISE_PATTERNS[p];
-        const eligible = showAdv ? base : base.filter(name => !ADVANCED.has(name));
-        const pool = eligible.length ? eligible : base; // fallback
-        part2[p] = pickNot(pool, prevPart2?.[p] || null, rng);
+      return idx;
+    }
+    function generateKSPlan(){
+      const steps = Object.keys(KS1);
+      const lines = ["Kalos Sthenos — ~10 min","", "Perform 1 drill per step (1× 5–10 reps), then move on.", ""];
+      const selections = [];
+      steps.forEach(step=>{
+        const list = KS1[step];
+        const lastIdx = lsGet(`rise:ks1:last:${step}`, null);
+        const idx = ksPickDifferent(list, lastIdx);
+        const name = list[idx];
+        selections.push({ group:'KS1', step, name, idx });
+        lines.push(`${step}: ${name}`);
+        lsSet(`rise:ks1:last:${step}`, idx);
       });
 
-      const order = shuffleRng(Object.entries(part2), rng);
-
-      // Met witregels + hints
-      const main = [
-        "Part 1: 10 minutes quality Get Up's",
-        "",
-        `Format: ${chosenFormat}`,
-        "Part 2 – 25 minutes circuit:",
-        ...order.map(([k,v])=>{
-          const extra = hintFor(k, v, chosenFormat);
-          return `  ${k}: ${v}${extra ? " " + extra : ""}`;
-        }),
-        "",
-        `Finisher Format: ${finisherFormat}`,
-        "Part 3 – 10 minutes quality reps:",
-        `  ${finisherExercise}`
-      ];
+      if(prefs.allowAdvanced){
+        lines.push("", "Advanced (add 1 drill per group if time):", "");
+        Object.keys(KS2).forEach(group=>{
+          const list = KS2[group];
+          const lastIdx = lsGet(`rise:ks2:last:${group}`, null);
+          const idx = ksPickDifferent(list, lastIdx);
+          const name = list[idx];
+          selections.push({ group:'KS2', step:group, name, idx });
+          lines.push(`${group}: ${name}`);
+          lsSet(`rise:ks2:last:${group}`, idx);
+        });
+      }
 
       return {
-        id: uuid4(),
-        main,
-        meta: {
-          modality: "rise",
-          date: new Date().toISOString(),
-          format: chosenFormat,
-          finisher_format: finisherFormat,
-          finisher_group: finisherGroup,
-          finisher_exercise: finisherExercise,
-          part2
-        }
+        id: uuid(), program:'Rise', createdAt: nowISO(),
+        mode:'recovery',
+        gate:(prefs.recSleep??0)+(prefs.recEnergy??0)+(prefs.recBody??0),
+        recovery: { main: lines, choice: 'Kalos Sthenos', ksSelections: selections }
       };
     }
 
-    /* ============== Storage helpers ============== */
-    const KEY_CURRENT = 'current:rise';
-    const KEY_HISTORY = 'history:rise';
-    const KEY_SHOW_FORMATS = 'rise:showFormats';
-    const KEY_SHOW_ADVANCED = 'rise:showAdvanced';
-
-    function pinTodayRise(rerollN=0){
-      const baseHistory = lsGet(KEY_HISTORY,[]);
-      const current = lsGet(KEY_CURRENT, null);
-      // Anti-herhaal geldt ook bij reroll: behandel huidige pin als "laatste" referentie
-      const historyForRules = current ? baseHistory.concat([current]) : baseHistory;
-
-      const seed = rerollN>0 ? `${todayKeyAms()}#${rerollN}` : todayKeyAms();
-      const session = generateRiseSession({ seed, history: historyForRules });
-      session.meta.reroll = rerollN;
-      lsSet(KEY_CURRENT, session);
-      return session;
+    /* ====== Recovery choices ====== */
+    function buildGFMFlow(){
+      const src = [
+        "Figure 4 → Lunge → Half Heel Sit",
+        "Egyptian arms (seated→pike→prone)",
+        "Ankle series",
+        "Supine neck rolls + segmental spine",
+        "Wrist flow",
+        "4pt crawl → push-up → pike → squat → crab",
+        "Loaded beast → wave unload"
+      ];
+      const items = src.slice();
+      // simple shuffle
+      for (let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; }
+      const pick = items.slice(0,7);
+      const lines = ["GFM Flow (~15–20 min):","", ...pick.map((s,i)=>`${i+1}) ${s}`)];
+      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', gate:(prefs.recSleep??0)+(prefs.recEnergy??0)+(prefs.recBody??0), recovery:{main:lines, choice:'GFM Flow'} };
+    }
+    function buildZone2(){
+      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', gate:(prefs.recSleep??0)+(prefs.recEnergy??0)+(prefs.recBody??0), recovery:{main:["Zone 2 — 30 minutes continuous"], choice:'Zone 2'} };
+    }
+    function buildRecoverySession(kind){
+      if(kind==='gfm') return buildGFMFlow();
+      if(kind==='zone2') return buildZone2();
+      return generateKSPlan(); // 'ks'
     }
 
-    function saveRiseToHistory(session, timer_seconds=0){
-      const arr = lsGet(KEY_HISTORY,[]);
-      arr.push({ ...session, saved_at: new Date().toISOString(), timer_seconds });
-      lsSet(KEY_HISTORY, arr);
+    /* ====== Generator (main) ====== */
+    function pickBallisticFormat(){
+      const map = lsGet('rise:finABEnabled', DEFAULT_FIN_AB_ENABLED);
+      const pool = FIN_BALLISTIC_FORMATS.filter(f => map[f.id]);
+      const last = lsGet(LS_PREV_FINISHER_FMT, null);
+      const pick = pickNoRepeatById(last, pool.length?pool:FIN_BALLISTIC_FORMATS);
+      lsSet(LS_PREV_FINISHER_FMT, pick.id);
+      return pick;
     }
-    function deleteRiseHistoryItem(id){
-      const arr = lsGet(KEY_HISTORY,[]);
-      lsSet(KEY_HISTORY, arr.filter(x=>x.id!==id));
+    function pickCarryFormat(){
+      const map = lsGet('rise:finCEnabled', DEFAULT_FIN_C_ENABLED);
+      const pool = CARRY_FORMATS.filter(f => map[f.id]);
+      const last = lsGet(LS_PREV_FINISHER_FMT, null);
+      const pick = pickNoRepeatById(last, pool.length?pool:CARRY_FORMATS);
+      lsSet(LS_PREV_FINISHER_FMT, pick.id);
+      return pick;
     }
-    function clearRiseHistory(){
-      if(confirm("Delete ALL Rise history?")) lsSet(KEY_HISTORY, []);
-    }
+    function generateRiseSession(){
+      const total = (prefs.recSleep??0)+(prefs.recEnergy??0)+(prefs.recBody??0);
+      const mode = total>=11 ? 'full' : total>=9 ? 'short' : total>=5 ? 'recovery' : 'breathing';
 
-    /* ============== SessionView met formats-toggle logica ============== */
-    function SessionView({ session, showFormats }) {
-      if(!session) return null;
-
-      // Herbouw de lijnen zodat we contextueel hints/hardlines kunnen toevoegen
-      const raw = session.main || [];
-      const lines = [];
-      for(let i=0;i<raw.length;i++){
-        const L = String(raw[i]);
-
-        // Verberg specifieke formatregels als toggle uit staat
-        if(!showFormats && (L.trim().startsWith("Format:") || L.trim().startsWith("Finisher Format:"))){
-          continue;
-        }
-
-        lines.push(L);
-
-        // Voeg generieke doelen toe als formats uit staan
-        if(!showFormats && L.trim()==="Part 2 – 25 minutes circuit:"){
-          lines.push("van 5 – 7 reps");
-        }
-        if(!showFormats && L.trim()==="Part 3 – 10 minutes quality reps:"){
-          lines.push("van 5 – 20 reps");
-        }
+      if (mode==='recovery') return { id:uuid(), mode, gate:total, createdAt:nowISO(), program:'Rise', pendingRecovery:true };
+      if (mode==='breathing'){
+        return { id:uuid(), program:'Rise', createdAt:nowISO(), mode, gate:total, breathing:{main:[
+          "Bottom Triangle Breathing",
+          "",
+          "Beginner: In 4s • Out 4s • Hold 4s (bottom)",
+          "Intermediate: In 4s • Out 6s • Hold 8s (bottom)",
+          "Advanced: In 6s • Out 8s • Hold 12s (bottom)",
+          "",
+          "Practice 5–20 minutes."
+        ]}};
       }
 
-      const t = session.meta?.date ? ` • ${new Date(session.meta.date).toLocaleDateString()}` : "";
-      return (
-        <div>
-          <h3 className="font-semibold mb-2 text-base sm:text-lg">Rise Session{t}</h3>
-          <div className="text-base sm:text-lg space-y-1">
-            {renderSmartList(lines)}
-          </div>
-          <p className="text-xs text-gray-400 mt-2">Pinned until you press “Complete”.</p>
-        </div>
-      );
+      // Part 2
+      const fmt = pickFormat();
+      const patternKeys = Object.keys(PATTERNS).sort(()=>Math.random()-0.5);
+      const part2 = patternKeys.map(p=> ({ pattern:p, ...pickExercise(p) }));
+
+      // Part 3 — group ≠ previous, exercise ≠ previous, format ≠ previous
+      const group = pickFinGroupNoRepeat();
+      let finisher = { group };
+      if (group==='A' || group==='B') {
+        const keyPrev = group==='A' ? 'rise:prevFinA' : 'rise:prevFinB';
+        const prevEx = lsGet(keyPrev, null);
+        const list = (group==='A' ? FIN_A_EX : FIN_B_EX);
+        const exercise = pickDistinct(prevEx, list); lsSet(keyPrev, exercise);
+        const ffmt = pickBallisticFormat();
+        finisher = { kind:'ballistic', group, exercise, format: ffmt };
+      } else {
+        const prevC  = lsGet('rise:prevCarry', null);
+        const raw    = pickDistinct(prevC, CARRIES); lsSet('rise:prevCarry', raw);
+        const cfmt   = pickCarryFormat();
+        const exercise = ((raw==='Suitcase Carry') && (cfmt.id==='c_double' || cfmt.id==='c_uneven')) ? 'Farmer Carry' : raw;
+        finisher = { kind:'carry', group, exercise, format: cfmt };
+      }
+
+      return { id: uuid(), program:'Rise', createdAt:nowISO(), mode, gate: total, format: fmt, part2, finisher, bellLevel: bell };
     }
 
-    /* ============== App (single Train page) ============== */
-    function App(){
-      const [session,setSession] = useState(lsGet(KEY_CURRENT,null));
-      const [elapsed,setElapsed] = useState(0);
-      const [running,setRunning] = useState(false);
-      const [historyOpen,setHistoryOpen] = useState(true);
-      const [version,setVersion] = useState(0);
-      const [rerolls,setRerolls] = useState(session?.meta?.reroll || 0);
-      const [showFormats,setShowFormats] = useState(lsGet(KEY_SHOW_FORMATS, true));
-      const [showAdvanced,setShowAdvanced] = useState(lsGet(KEY_SHOW_ADVANCED, false));
+    /* ====== Progression ====== */
+    function showProgressionModal(question, onYes){
+      $('#progQuestion').textContent = question;
+      const dlg = $('#progModal'); dlg.showModal();
+      const clean = ()=>{ $('#progYes').onclick=null; $('#progNo').onclick=null; dlg.close(); };
+      $('#progNo').onclick = ()=> clean();
+      $('#progYes').onclick = ()=>{ try{ onYes?.(); }finally{ clean(); toast('Great! You can move up for the whole session.'); } };
+    }
+    function checkMPProgressTriggers(s){
+      if(!s || !s.part2 || !s.format) return;
+      const hasMP = s.part2.some(it => it.name === 'Military Press');
+      if(!hasMP) return;
 
-      // Zorg dat generator de actuele toggle ziet
-      useEffect(()=>{ window.__SHOW_ADVANCED__ = showAdvanced; }, [showAdvanced]);
-      useEffect(()=>{ window.__SHOW_ADVANCED__ = lsGet(KEY_SHOW_ADVANCED, false); }, []); // init
-
-      function generateToday(){
-        const s = pinTodayRise(0);
-        setSession(s); setElapsed(0); setRunning(false); setRerolls(0);
+      if(s.format.id === 'repLadder'){
+        showProgressionModal(
+          "Military Press • Rep Ladder 1–2–3–4–5 — did you complete all reps each rung (both arms)?",
+          ()=> setBell(bell+1)
+        );
+        return;
       }
-      function rerollToday(){
-        const next = (rerolls||0)+1;
-        const s = pinTodayRise(next);
-        setSession(s); setElapsed(0); setRunning(false); setRerolls(next);
+      if(s.format.id === 'weightLadder'){
+        showProgressionModal(
+          "Military Press • Weight Ladder (5@L, 3@M, 2+@H) — did you get 5 reps on Heavy?",
+          ()=> setBell(bell+1)
+        );
       }
-      function complete(){
-        if(!session) return;
-        setRunning(false);
-        saveRiseToHistory(session, elapsed||0);
-        try{ localStorage.removeItem(KEY_CURRENT); }catch(e){}
-        setSession(null); setElapsed(0);
-        alert('Rise session saved.');
-        setVersion(v=>v+1);
-      }
-
-      const history = (lsGet(KEY_HISTORY,[]).slice().sort((a,b)=> new Date(b.saved_at)-new Date(a.saved_at)));
-
-      return (
-        <div className="mx-auto w-full max-w-[680px] px-3">
-          {/* Topbar */}
-          <div className="sticky top-0 z-20 backdrop-blur bg-white/70 dark:bg-gray-900/60 border-b border-black/10 dark:border-white/10">
-            <div className="flex items-center justify-between h-12">
-              <h1 className="font-semibold text-lg">Rise</h1>
-              <div className="flex items-center gap-3">
-                <label className="text-xs sm:text-sm flex items-center gap-2 select-none">
-                  <input
-                    type="checkbox"
-                    checked={showFormats}
-                    onChange={(e)=>{ setShowFormats(e.target.checked); lsSet(KEY_SHOW_FORMATS, e.target.checked); }}
-                  />
-                  Show formats
-                </label>
-                <label className="text-xs sm:text-sm flex items-center gap-2 select-none">
-                  <input
-                    type="checkbox"
-                    checked={showAdvanced}
-                    onChange={(e)=>{ setShowAdvanced(e.target.checked); lsSet(KEY_SHOW_ADVANCED, e.target.checked); }}
-                  />
-                  Include advanced
-                </label>
-                <button onClick={()=>document.documentElement.classList.toggle('dark')} className="text-xs underline opacity-80">Dark</button>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="mt-3 space-y-3">
-            <CalmCard
-              title="Today's Rise"
-              subtitle="Deterministisch per dag — vastgepind tot je Complete drukt"
-            >
-              {!session ? (
-                <div className="flex flex-col gap-2">
-                  <button className="btn bg-blue-600 w-full" onClick={generateToday}>Generate Today’s Rise</button>
-                </div>
-              ) : (
-                <>
-                  <SessionView session={session} showFormats={showFormats}/>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <button className="btn-sm bg-green-600" onClick={complete}>Complete</button>
-                    <button className="btn-sm bg-gray-700" onClick={rerollToday} title="Nieuwe seed voor vandaag">Reroll</button>
-                  </div>
-                </>
-              )}
-            </CalmCard>
-
-            <CalmCard title="Timer">
-              <Timer elapsed={elapsed} setElapsed={setElapsed} running={running} setRunning={setRunning} />
-            </CalmCard>
-
-            <CalmCard
-              title={`History (${history.length})`}
-              footer={
-                <div className="flex gap-2">
-                  <button className="btn bg-red-700 w-full" onClick={()=>{ clearRiseHistory(); setVersion(v=>v+1); }}>Clear all</button>
-                </div>
-              }
-            >
-              <button className="text-sm underline" onClick={()=>setHistoryOpen(o=>!o)}>
-                {historyOpen? 'Hide' : 'Show'}
-              </button>
-              {historyOpen && (
-                <div className="mt-2 space-y-2">
-                  {history.length===0 && <div className="text-sm text-gray-400">Empty</div>}
-                  {history.map((h,idx)=>(
-                    <div key={h.id||idx} className="p-3 rounded-xl border border-black/10 dark:border-white/10">
-                      <div className="text-sm flex flex-wrap gap-3">
-                        <span className="font-medium">RISE</span>
-                        <span>• {new Date(h.meta?.date||h.saved_at).toLocaleString()}</span>
-                        {h.timer_seconds>0 && <span>• Time: {fmtHMS(h.timer_seconds)}</span>}
-                        {h.meta?.format && <span className="truncate max-w-[50%]">• {h.meta.format}</span>}
-                        {h.meta?.finisher_format && <span className="truncate max-w-[50%]">• {h.meta.finisher_format}</span>}
-                      </div>
-                      <div className="text-sm mt-1">
-                        {renderSmartList(h.main || [])}
-                      </div>
-                      <div className="mt-2">
-                        <button
-                          className="btn-sm bg-gray-700"
-                          onClick={()=>{ deleteRiseHistoryItem(h.id); /* trigger refresh */ location.reload(); }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CalmCard>
-          </div>
-        </div>
-      );
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+    /* ====== Render ====== */
+    let currentSession = null;
+
+    function renderPart1(){
+      const hide = currentSession && (currentSession.mode==='breathing' || currentSession.mode==='recovery');
+      $('#part1').style.display = hide ? 'none' : '';
+      if(!hide) renderPart1Text();
+    }
+
+    function renderPart2(s){
+      const host = $('#p2List');
+      if (s.mode==='breathing'){
+        $('#meta2').textContent = '—';
+        host.innerHTML = (s.breathing.main||[]).map(l=> `<p class="text-sm">${l}</p>`).join('');
+        return;
+      }
+      if (s.mode==='recovery'){
+        $('#meta2').textContent = s.recovery?.choice ? `Pinned: ${s.recovery.choice}` : '—';
+        host.innerHTML = (s.recovery?.main||[]).map(l=> `<p class="text-sm">${l}</p>`).join('');
+        return;
+      }
+
+      const twoBells = s.format && (s.format.id==='double' || s.format.id==='uneven');
+      const fmtObj = FORMATS.find(f=>f.id===s.format.id);
+      $('#meta2').textContent = fmtObj ? fmtObj.label : (s.format?.meta||'');
+      host.innerHTML = s.part2.map(item=>{
+        const showTriangle = twoBells && item.singleOnly;
+        const badge = showTriangle ? `<span class="marker text-amber-600"><span class="triangle"></span><span>Single-bell only</span></span>` : '';
+        const cue = EX_CUES[item.name] || "Move smoothly in pain-free range; breathe.";
+        return `
+          <article class="p-3 rounded-lg card card-click" data-desc>
+            <div class="text-xs text-slate-600 dark:text-slate-400 mb-1">${item.pattern}</div>
+            <div class="font-medium">${item.name}</div>
+            <div class="mt-1">${badge}</div>
+            <div class="disclosure max-h-0 text-sm italic mt-2" data-body>${cue}</div>
+          </article>`;
+      }).join('');
+    }
+
+    function renderPart3(s){
+      const host = $('#p3List');
+      if (s.mode==='breathing'){ $('#meta3').textContent=''; host.innerHTML=''; return; }
+      if (s.mode==='recovery'){ $('#meta3').textContent=''; host.innerHTML=''; return; }
+
+      if (s.finisher?.kind === 'ballistic') {
+        const fmt = FIN_BALLISTIC_FORMATS.find(x=>x.id===s.finisher.format.id);
+        $('#meta3').textContent = fmt ? fmt.label : (s.finisher.format?.meta||'');
+        const cue = EX_CUES[s.finisher.exercise] || 'Crisp reps; brace; breathe.';
+        host.innerHTML = `
+          <article class="p-3 rounded-lg card card-click" data-desc>
+            <div class="text-xs text-slate-600 dark:text-slate-400 mb-1">Ballistic (${s.finisher.group==='A'?'Anterior':'Posterior'})</div>
+            <div class="font-medium">${s.finisher.exercise}</div>
+            <div class="disclosure max-h-0 text-sm italic mt-2" data-body>${cue}</div>
+          </article>`;
+      } else {
+        const fmt = CARRY_FORMATS.find(x=>x.id===s.finisher.format.id);
+        $('#meta3').textContent = fmt ? fmt.label : (s.finisher.format?.meta||'');
+        const carryCue = EX_CUES[s.finisher.exercise] || 'Walk smooth; packed shoulders; steady breathing.';
+        host.innerHTML = `
+          <article class="p-3 rounded-lg card card-click" data-desc>
+            <div class="text-xs text-slate-600 dark:text-slate-400 mb-1">Carry (Group C)</div>
+            <div class="font-medium">${s.finisher.exercise}</div>
+            <div class="disclosure max-h-0 text-sm italic mt-2" data-body>${carryCue}</div>
+          </article>`;
+      }
+    }
+
+    function renderShortUI(){
+      const banner = $('#shortBanner');
+      const isShort = currentSession && currentSession.mode==='short';
+      if (isShort){
+        banner.classList.remove('hidden');
+        banner.innerHTML = `
+          <div class="mode-short-banner rounded-xl p-3">
+            <div class="font-semibold">Short Session (5/1/5)</div>
+            <div class="text-sm">Part 1: 5 min Get-ups • Part 2: 1 quality round • Part 3: short carry — single-bell.</div>
+          </div>`;
+      } else banner.classList.add('hidden');
+    }
+
+    function renderSession(s){
+      currentSession = s;
+      $('#sessTitle').textContent='Session — '+fmtDate(new Date(s.createdAt||nowISO()));
+      reflectBellInHeader();
+      renderPart1();
+      renderPart2(s);
+      renderPart3(s);
+      renderShortUI();
+    }
+
+    /* ====== History ====== */
+    function renderHistory(){
+      const hist = lsGet('rise:history', []);
+      const host = $('#histList');
+      if(hist.length===0){ host.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400">Empty.</p>'; return; }
+      const rows = hist.slice().reverse().map(h=>{
+        const s = h.session || {};
+        const f2 = s.format ? (FORMATS.find(f=>f.id===s.format.id)?.label || s.format.meta) : '';
+        const f3 = (s.finisher && s.finisher.format) ? (
+          s.finisher.kind==='ballistic'
+            ? (FIN_BALLISTIC_FORMATS.find(f=>f.id===s.finisher.format.id)?.label || s.finisher.format.meta)
+            : (CARRY_FORMATS.find(f=>f.id===s.finisher.format.id)?.label || s.finisher.format.meta)
+        ) : '';
+        return `
+          <div class="py-2 hist-row">
+            <div class="text-sm"><strong>${new Date(h.saved_at).toLocaleString()}</strong> • ${s.mode||'full'} • Bell L${s.bellLevel||bell}</div>
+            <div class="text-xs mt-1">${f2}${f2 && f3 ? ' — ' : ''}${f3}</div>
+            ${s.part2 ? `<div class="text-xs mt-1">${s.part2.map(it=>`${it.pattern}: ${it.name}`).join(' • ')}</div>` : ''}
+            ${s.recovery?.choice ? `<div class="text-xs mt-1">Recovery: ${s.recovery.choice}</div>` : ''}
+          </div>`;
+      }).join('');
+      host.innerHTML = rows;
+    }
+    function exportJSON(){
+      const hist = lsGet('rise:history', []);
+      const blob = new Blob([JSON.stringify(hist,null,2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download='rise-history.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+    function toCSV(rows){
+      const esc = v => `"${String(v??"").replace(/"/g,'""')}"`;
+      const header = ["saved_at","mode","bellLevel","format2","format3","part2","recovery"];
+      const out = [header.join(",")];
+      rows.forEach(h=>{
+        const s=h.session||{};
+        const f2 = s.format ? (FORMATS.find(f=>f.id===s.format.id)?.label || s.format.meta) : '';
+        const f3 = (s.finisher && s.finisher.format) ? (
+          s.finisher.kind==='ballistic'
+            ? (FIN_BALLISTIC_FORMATS.find(f=>f.id===s.finisher.format.id)?.label || s.finisher.format.meta)
+            : (CARRY_FORMATS.find(f=>f.id===s.finisher.format.id)?.label || s.finisher.format.meta)
+        ) : '';
+        out.push([
+          h.saved_at || "",
+          s.mode || "",
+          s.bellLevel || "",
+          f2,
+          f3,
+          (s.part2||[]).map(it=>`${it.pattern}: ${it.name}`).join(" | "),
+          s.recovery?.choice || ""
+        ].map(esc).join(","));
+      });
+      return out.join("\n");
+    }
+    function exportCSV(){
+      const hist = lsGet('rise:history', []);
+      const csv = toCSV(hist);
+      const blob = new Blob([csv], {type:"text/csv"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    /* ====== Settings UI builders ====== */
+    function renderFormatsSettings(){
+      const map = lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED);
+      const host = $('#fmtPart2');
+      host.innerHTML = FORMATS.map(f=>{
+        const checked = map[f.id]!==false;
+        return `<label><span>${f.label}</span><input type="checkbox" data-k="${f.id}" ${checked?'checked':''}></label>`;
+      }).join('');
+      host.onchange = (e)=>{
+        const cb = e.target.closest('input[type="checkbox"]'); if(!cb) return;
+        const k = cb.dataset.k; const next = { ...lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED), [k]: cb.checked };
+        setFmtEnabled(next); toast('Formats saved.');
+      };
+    }
+    function renderFinABSettings(){
+      const map = lsGet('rise:finABEnabled', DEFAULT_FIN_AB_ENABLED);
+      const host = $('#fmtFinAB');
+      host.innerHTML = FIN_BALLISTIC_FORMATS.map(f=>{
+        const checked = map[f.id]!==false;
+        return `<label><span>${f.label}</span><input type="checkbox" data-k="${f.id}" ${checked?'checked':''}></label>`;
+      }).join('');
+      host.onchange = (e)=>{
+        const cb = e.target.closest('input[type="checkbox"]'); if(!cb) return;
+        const k = cb.dataset.k; const next = { ...lsGet('rise:finABEnabled', DEFAULT_FIN_AB_ENABLED), [k]: cb.checked };
+        setFinABEnabled(next); toast('Finisher A/B formats saved.');
+      };
+    }
+    function renderFinCSettings(){
+      const map = lsGet('rise:finCEnabled', DEFAULT_FIN_C_ENABLED);
+      const host = $('#fmtFinC');
+      host.innerHTML = CARRY_FORMATS.map(f=>{
+        const checked = map[f.id]!==false;
+        return `<label><span>${f.label}</span><input type="checkbox" data-k="${f.id}" ${checked?'checked':''}></label>`;
+      }).join('');
+      host.onchange = (e)=>{
+        const cb = e.target.closest('input[type="checkbox"]'); if(!cb) return;
+        const k = cb.dataset.k; const next = { ...lsGet('rise:finCEnabled', DEFAULT_FIN_C_ENABLED), [k]: cb.checked };
+        setFinCEnabled(next); toast('Finisher C formats saved.');
+      };
+    }
+
+    /* ====== Global event delegation for disclosures ====== */
+    document.addEventListener('click', (e)=>{
+      const card = e.target.closest('[data-desc]'); if(!card) return;
+      const body = card.querySelector('[data-body]'); if(!body) return;
+      body.style.maxHeight = (body.style.maxHeight && body.style.maxHeight!=='0px') ? '0px' : (body.scrollHeight+'px');
+    });
+
+    /* ====== Events ====== */
+    $('#btnGenerate').onclick=()=>openRecoveryModal();
+
+    $('#recConfirm').onclick=()=>{
+      $('#recModal').close();
+      const s=generateRiseSession();
+
+      if (s.pendingRecovery){
+        const dlg = $('#recChoice');
+        dlg.showModal();
+        dlg.onclick = (e)=>{
+          const btn = e.target.closest('button[data-recov]'); if(!btn) return;
+          const kind = btn.dataset.recov;
+          dlg.close();
+          const pinned = buildRecoverySession(kind);
+          renderSession(pinned);
+          toast(`${pinned.recovery.choice} pinned.`);
+        };
+        return;
+      }
+
+      if (s.mode==='breathing'){
+        renderSession(s);
+        toast('Breathing pinned.');
+        return;
+      }
+
+      renderSession(s);
+      checkMPProgressTriggers(s);
+      toast('Session generated.');
+    };
+
+    $('#btnComplete').onclick=()=>{
+      if(!currentSession){ toast('No session to complete.'); return; }
+      const hist = lsGet('rise:history', []);
+      hist.push({ saved_at: nowISO(), session: currentSession });
+      lsSet('rise:history', hist);
+      toast('Session saved to history.');
+    };
+
+    // Tabs
+    $$('.tab-btn').forEach(b=> b.onclick=()=>{
+      const name=b.dataset.tab;
+      ['train','ks','history','settings'].forEach(t=>{
+        $('#tab-'+t).classList.toggle('hidden', t!==name);
+        document.querySelector(`[data-tab="${t}"]`).classList.toggle('active', t===name);
+      });
+      if(name==='ks') renderKS1Library();
+      if(name==='history') renderHistory();
+      if(name==='settings'){ renderFormatsSettings(); renderFinABSettings(); renderFinCSettings(); }
+    });
+
+    // Settings primitive toggles
+    $('#s_pull').onchange=e=>{ prefs.pullupBar=e.target.checked; savePrefs(); toast('Saved.'); }
+    $('#s_adv').onchange=e=>{ prefs.allowAdvanced=e.target.checked; savePrefs(); toast('Saved.'); }
+
+    // Dark toggle
+    function setDarkLabel(){ const isDark=document.documentElement.classList.contains('dark'); $('#btnDark').textContent=isDark?'Light':'Dark'; }
+    $('#btnDark').onclick=()=>{ document.documentElement.classList.toggle('dark'); prefs.dark=document.documentElement.classList.contains('dark'); savePrefs(); setDarkLabel(); };
+
+    // Boot
+    (function boot(){
+      if (prefs.dark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+      setDarkLabel();
+      reflectBellInHeader();
+      renderPart1Text();
+      $('#sessTitle').textContent='Session — '+fmtDate(new Date());
+      $('#s_pull').checked = !!prefs.pullupBar;
+      $('#s_adv').checked  = !!prefs.allowAdvanced;
+    })();
   </script>
 </body>
 </html>
-
-
-
-
