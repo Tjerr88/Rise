@@ -209,21 +209,21 @@
           <div class="space-y-3">
             <label class="flex items-center justify-between gap-4 p-2 rounded-md">
               <div>
-                <div class="font-medium">Rep Ladder 1–2–3–4–5 (both arms)</div>
-                <div class="text-xs muted">Completed all reps with clean form.</div>
+                <div class="font-medium">Military Press — Rep Ladder 1–2–3–4–5 (both arms)</div>
+                <div class="text-xs muted">Completed all rungs with clean form.</div>
               </div>
               <span class="switch"><input id="chkRep" type="checkbox"><span class="slider"></span></span>
             </label>
             <label class="flex items-center justify-between gap-4 p-2 rounded-md">
               <div>
-                <div class="font-medium">Weight Ladder (5 @ Heavy, <em>both arms</em>)</div>
+                <div class="font-medium">Military Press — Weight Ladder (5 @ Heavy, <em>both arms</em>)</div>
                 <div class="text-xs muted">5 crisp reps per arm at your heavy bell.</div>
               </div>
               <span class="switch"><input id="chkWeight" type="checkbox"><span class="slider"></span></span>
             </label>
           </div>
           <div class="flex items-center gap-2 mt-2">
-            <button id="btnProgLevelUp" class="btn btn-ok disabled:opacity-50" disabled>Level Up</button>
+            <button id="btnProgLevelUp" class="btn btn-ok disabled:opacity-50" disabled>Level Up (Military Press – determine bell)</button>
             <span class="text-sm muted">Current: <strong id="lblBell">L1</strong></span>
           </div>
         </div>
@@ -293,6 +293,7 @@
     function $all(q,root){ return Array.prototype.slice.call((root||document).querySelectorAll(q)); }
     function lsGet(k, fallback){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
     function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+    function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
     function uuid(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){ var r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
     function nowISO(){ return new Date().toISOString(); }
     function fmtDate(d){ var dd=('0'+d.getDate()).slice(-2), mm=('0'+(d.getMonth()+1)).slice(-2), yy=d.getFullYear(); var hh=('0'+d.getHours()).slice(-2), mi=('0'+d.getMinutes()).slice(-2); return dd+'-'+mm+'-'+yy+' '+hh+':'+mi; }
@@ -532,6 +533,91 @@
       ]
     };
 
+    /* ====== Bodyweight Mobility Flow — 7 regio’s ====== */
+    var BW_REGIONS = [
+      "Pols / Arm",
+      "Schouder / Bovenrug",
+      "Nek",
+      "Rug / Wervelkolom",
+      "Heupen",
+      "Benen / Enkels",
+      "Transitie / Full-body"
+    ];
+    var BODYWEIGHT_POOLS = {
+      "Pols / Arm": [
+        "Wrist CARs",
+        "Tabletop Wrist Stretch (extension)",
+        "Reverse Tabletop Wrist Stretch (flexion)",
+        "Quadruped Wrist Circles",
+        "Prayer Stretch",
+        "Reverse Prayer Stretch",
+        "Forearm Flexor Stretch",
+        "Forearm Extensor Stretch"
+      ],
+      "Schouder / Bovenrug": [
+        "Scapula Push-ups",
+        "Crab Reach",
+        "Shoulder CARs",
+        "Thread the Needle (T-spine)",
+        "Prone Y-T-W",
+        "Wall Slides",
+        "Scapular Wall Clocks"
+      ],
+      "Nek": [
+        "Neck CARs",
+        "Chin Tucks (supine or standing)",
+        "Ear-to-Shoulder Stretch (lateral)",
+        "Slow Neck Rotations",
+        "Nods (flexion/extension)",
+        "Levator Scapulae Stretch"
+      ],
+      "Rug / Wervelkolom": [
+        "Cat Stretch (McGill)",
+        "Segmental Cat-Cow",
+        "Prone Press-up (McKenzie)",
+        "Side-lying Open Book",
+        "Child’s Pose with Side Reach",
+        "Quadruped T-Spine Rotation"
+      ],
+      "Heupen": [
+        "Seated Hip CARs",
+        "90/90 Hip Switch",
+        "Half-kneeling Hip Flexor Stretch",
+        "Figure-4 / Pigeon (gentle)",
+        "Glute Bridge → March",
+        "Deep Squat Hold with Shift"
+      ],
+      "Benen / Enkels": [
+        "Toe Sit with Rock (toe ext)",
+        "Ankle CARs",
+        "Calf Stretch (knee straight)",
+        "Soleus Stretch (knee bent)",
+        "Hinge Hamstring Stretch",
+        "Cossack Squat Mobility",
+        "Tibialis Raises (wall)"
+      ],
+      "Transitie / Full-body": [
+        "Beast → Step Under → Return",
+        "Z-Sit → Side Roll → Prone Return",
+        "Turkish Get-up Sit-up (to elbow)",
+        "Inchworm Walkouts",
+        "World’s Greatest Stretch",
+        "Squat-to-Stand with T-Spine Opener"
+      ]
+    };
+    function pickOneDifferent(region, lastMap){
+      var pool = BODYWEIGHT_POOLS[region] || [];
+      if(!pool.length) return "-";
+      var last = lastMap ? lastMap[region] : null;
+      var choice=null, tries=0;
+      do{
+        choice = pool[Math.floor(Math.random()*pool.length)];
+        tries++;
+        if(tries>10) break;
+      } while(last && choice===last);
+      return choice;
+    }
+
     /* ====== Generators ====== */
     function listEnabled(base, map){ return base.filter(function(x){ return (map && map[x.id] !== false); }); }
     function weightedPick(list){
@@ -659,6 +745,58 @@
       };
     }
 
+    /* ====== Bodyweight Mobility Flow builder ====== */
+    function buildGFMFlow(){
+      var last = lsGet('rise:lastBodyFlow', null) || {};
+      var selections = {};
+      BW_REGIONS.forEach(function(region){
+        selections[region] = pickOneDifferent(region, last);
+      });
+      lsSet('rise:lastBodyFlow', selections);
+      lsSet('rise:lastBodyFlowDate', nowISO());
+
+      var lines = ["Bodyweight Mobility Flow — ~10–15 min", "", "Perform 30–45s per drill. Breathe calm, move smooth.", ""];
+      BW_REGIONS.forEach(function(region){
+        lines.push(region + ": " + selections[region]);
+      });
+
+      return {
+        id: uuid(), program:'Rise', createdAt: nowISO(),
+        mode:'recovery',
+        gate:(prefs.recSleep||0)+(prefs.recEnergy||0)+(prefs.recBody||0),
+        recovery: { main: lines, choice: 'Bodyweight Mobility Flow', selections: selections }
+      };
+    }
+
+    /* ====== Zone 2 builder ====== */
+    function buildZone2(){
+      var lines = [
+        "Zone 2 — 30–45 min",
+        "",
+        "Conversational pace (talk test pass).",
+        "Pick one: brisk walk / bike / rower / light jog.",
+        "",
+        "Tips:",
+        "• Keep cadence steady, nasal breathing if possible.",
+        "• RPE ~4–5/10.",
+        "• Optional HR guide: ~70–80% of HRmax."
+      ];
+      return {
+        id: uuid(), program:'Rise', createdAt: nowISO(),
+        mode:'recovery',
+        gate:(prefs.recSleep||0)+(prefs.recEnergy||0)+(prefs.recBody||0),
+        recovery: { main: lines, choice: 'Zone 2' }
+      };
+    }
+
+    /* ====== Unified recovery dispatcher (for modal choice) ====== */
+    function buildRecoverySession(kind){
+      if(kind==='gfm') return buildGFMFlow();
+      if(kind==='ks')  return generateKSPlan();
+      if(kind==='zone2') return buildZone2();
+      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', recovery:{ main:["Recovery"], choice:"Recovery"} };
+    }
+
     /* ====== Session builder ====== */
     function renderPart1Text(){
       var p1 = $('#p1Text');
@@ -668,7 +806,7 @@
         <li>Use the <strong>same bell</strong> as Part 2.</li>\
         <li>Autoregulate:\
           <div class="mt-1 text-xs muted">\
-            Progress over time → 3×1+1 → 4×1+1 → 5×1+1 → 1×2+2 + 4×1+1.\
+            Progress over time → 3×1+1 • 4×1+1 • 5×1+1 • 1×2+2 + 4×1+1.\
           </div>\
         </li>\
       </ul>';
@@ -860,6 +998,26 @@
       var a = document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
+    /* ====== Hard reset (PATCH) ====== */
+    function hardReset(){
+      // history
+      lsSet('rise:history', []);
+      // level → L1
+      setBell(1);
+      // clear format memory
+      lsDel('rise_prev_format_v1');
+      lsDel('rise:prevFin_A'); lsDel('rise:prevFin_B');
+      lsDel('rise:prevFinisher_fmt_v1'); // legacy
+      lsDel('rise:prev_finisher_fmt_v1');
+      // carries & patterns memory
+      lsDel('rise:prevCarry');
+      Object.keys(PATTERNS).forEach(function(p){ lsDel('rise_prev_ex_'+p); });
+      // recovery caches
+      lsDel('rise:lastBodyFlow'); lsDel('rise:lastBodyFlowDate');
+      Object.keys(KS1).forEach(function(k){ lsDel('rise:ks1:last:'+k); });
+      Object.keys(KS2).forEach(function(k){ lsDel('rise:ks2:last:'+k); });
+    }
+
     /* ====== Dialog instances ====== */
     var recDlg = makePolyfill($('#recModal'));
     var recChoiceDlg = makePolyfill($('#recChoice'));
@@ -886,7 +1044,7 @@
           if(!btn) return;
           recChoiceDlg.close();
           var kind = btn.getAttribute('data-recov');
-          var pinned = buildRecoverySession(kind);
+          var pinned = buildRecoverySession(kind);   // <-- FIX: werkt nu
           renderSession(pinned);
           renderRecoveryPreview($('#recPreview'), pinned);
           toast((pinned.recovery && pinned.recovery.choice ? pinned.recovery.choice : 'Recovery') + ' pinned.');
@@ -1075,10 +1233,15 @@
       if($('#s_adv'))  $('#s_adv').checked  = !!prefs.allowAdvanced;
     })();
 
-    // Exports + clear
+    // Exports + clear (PATCHED: full reset)
     $('#btnExportJSON').onclick=exportJSON;
     $('#btnExportCSV').onclick=exportCSV;
-    $('#btnClearHist').onclick=function(){ lsSet('rise:history', []); toast('History cleared.'); var hl=$('#histList'); if(hl) hl.innerHTML=''; };
+    $('#btnClearHist').onclick=function(){
+      hardReset();
+      toast('All data cleared. Bell reset to L1.');
+      renderHistory();
+      reflectBell();
+    };
   })();
   </script>
 </body>
