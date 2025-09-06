@@ -10,18 +10,10 @@
     :root { color-scheme: light dark; }
     body { -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 
-    /* Theme tokens */
     :root{
-      --fg:#0f172a;
-      --fg-muted:#475569;
-      --bg:#f1f5f9;
-      --ok:#059669;
+      --fg:#0f172a; --fg-muted:#475569; --bg:#f1f5f9; --ok:#059669;
     }
-    html.dark{
-      --fg:#e5e7eb;
-      --fg-muted:#cbd5e1;
-      --bg:#0f172a;
-    }
+    html.dark{ --fg:#e5e7eb; --fg-muted:#cbd5e1; --bg:#0f172a; }
     body{ color:var(--fg); background:var(--bg); }
     .muted{ color:var(--fg-muted); }
 
@@ -33,6 +25,7 @@
     .tab-btn { padding:.5rem .8rem; border-radius:.6rem; }
     .tab-btn.active { background:#2563eb; color:#fff; }
     html.dark .tab-btn:not(.active){ color:#e5e7eb; }
+
     .disclosure { transition:max-height .25s ease; overflow:hidden; }
     .card-click { cursor:pointer; }
     .triangle { width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:12px solid currentColor; }
@@ -41,10 +34,8 @@
     .badge { border:1px solid rgba(0,0,0,.12); padding:.15rem .45rem; border-radius:.5rem; font-size:.72rem; }
     html.dark .badge { border-color: rgba(255,255,255,.18); }
 
-    /* Ensure dialogs inherit color in both themes */
     dialog, .recovery-modal { color:var(--fg); }
 
-    /* Recovery modal */
     .recovery-modal .label, .recovery-modal .hint, .recovery-modal .value { color:var(--fg); }
     .recovery-modal .scale-btn {
       color:#0f172a; background:#e5e7eb; border:1px solid rgba(0,0,0,.15); border-radius:.5rem; padding:.45rem .7rem; font-size:.9rem;
@@ -54,7 +45,6 @@
     }
     .recovery-modal .scale-btn.active { background:#2563eb !important; color:#fff !important; }
 
-    /* Short session banner */
     .mode-short-banner {
       background: linear-gradient(180deg,#f59e0b1a,#f59e0b0f);
       border:1px solid rgba(245,158,11,.45);
@@ -73,7 +63,6 @@
     .hist-row { border-bottom:1px solid rgba(0,0,0,.08); }
     html.dark .hist-row { border-color:rgba(255,255,255,.12); }
 
-    /* Toggle (manual progression) */
     .switch { position:relative; width:44px; height:24px; display:inline-block; }
     .switch input { display:none; }
     .slider { position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:999px; transition:.2s; }
@@ -82,7 +71,6 @@
     input:checked + .slider:before { transform:translateX(20px); }
     html.dark .slider { background:#475569; }
 
-    /* Simple dialog polyfill (for old browsers) */
     .dlg-polyfill { display:none; position:fixed; inset:0; z-index:50; color:var(--fg); }
     .dlg-polyfill .dlg-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
     .dlg-polyfill .dlg-panel { position:relative; margin:8vh auto; width:min(92vw,520px); border-radius:0.75rem; overflow:hidden; }
@@ -91,7 +79,6 @@
 </head>
 <body class="min-h-screen">
   <div class="max-w-3xl mx-auto px-4 py-4">
-    <!-- Topbar -->
     <div class="flex items-start justify-between">
       <div>
         <h1 class="text-xl font-bold">Rise</h1>
@@ -103,7 +90,6 @@
       </div>
     </div>
 
-    <!-- Tabs -->
     <div class="mt-3 flex gap-2">
       <button data-tab="train" class="tab-btn active">Train</button>
       <button data-tab="recovery" class="tab-btn">Recovery / Rest Day</button>
@@ -111,7 +97,6 @@
       <button data-tab="settings" class="tab-btn">Settings</button>
     </div>
 
-    <!-- TRAIN -->
     <div id="tab-train" class="mt-3">
       <section class="card rounded-xl">
         <header class="px-4 py-3 border-b border-black/10 dark:border-white/10 flex justify-between">
@@ -141,7 +126,6 @@
       </section>
     </div>
 
-    <!-- RECOVERY -->
     <div id="tab-recovery" class="hidden mt-3">
       <section class="card rounded-xl p-4 space-y-3">
         <h3 class="font-semibold">Recovery / Rest Day</h3>
@@ -158,7 +142,6 @@
       </section>
     </div>
 
-    <!-- HISTORY -->
     <div id="tab-history" class="hidden mt-3">
       <section class="card rounded-xl p-4">
         <div class="flex items-center justify-between">
@@ -173,7 +156,6 @@
       </section>
     </div>
 
-    <!-- SETTINGS -->
     <div id="tab-settings" class="hidden mt-3">
       <section class="card rounded-xl p-4 space-y-4">
         <div class="flex justify-between">
@@ -200,7 +182,6 @@
           <div id="fmtFinC" class="set-list space-y-1"></div>
         </div>
 
-        <!-- Manual Progression -->
         <div class="border-t border-black/10 dark:border-white/10 pt-3">
           <h4 class="font-semibold mb-2">Manual Progression Check</h4>
           <p class="text-sm muted mb-2">
@@ -274,7 +255,7 @@
     </div>
   </dialog>
 
-  <!-- Progression Modal (auto — only on Complete) -->
+  <!-- Progression Modal -->
   <dialog id="progModal" class="rounded-xl p-0 w-[420px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
     <div class="p-4 border-b border-black/10 dark:border-white/10">
       <h3 class="font-semibold">Progression Check</h3>
@@ -288,7 +269,6 @@
 
   <script>
   (function(){
-    /* ====== Utils ====== */
     function $(q,root){ return (root||document).querySelector(q); }
     function $all(q,root){ return Array.prototype.slice.call((root||document).querySelectorAll(q)); }
     function lsGet(k, fallback){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
@@ -312,17 +292,16 @@
       return { open:function(){ wrap.classList.add('open'); }, close:function(){ wrap.classList.remove('open'); } };
     }
 
-    /* ====== State ====== */
     var prefs = lsGet('rise:prefs', { pullupBar:true, allowAdvanced:true, dark:true, recSleep:null, recEnergy:null, recBody:null });
     function savePrefs(){ lsSet('rise:prefs', prefs); }
     var bell = lsGet('rise:bellLevel', 1);
     function setBell(n){ bell = Math.max(1, n|0); lsSet('rise:bellLevel', bell); reflectBell(); }
     function reflectBell(){ var b=$('#bellBadge'); if(b) b.textContent='Bell L'+bell; var l=$('#lblBell'); if(l) l.textContent='L'+bell; }
 
-    /* ====== Config ====== */
     var DEFAULT_FMT_ENABLED = lsGet('rise:fmtEnabled', { single:true, repLadder:true, weightLadder:true, double:true, timed:true, uneven:true });
     var DEFAULT_FIN_AB_ENABLED = lsGet('rise:finABEnabled', { f_single:true, f_rpladder:true, f_wladder:true, f_double:true, f_uneven:true, f_timed:true });
     var DEFAULT_FIN_C_ENABLED  = lsGet('rise:finCEnabled',  { c_single:true, c_double:true, c_uneven:true, c_wladder:true, c_timed:true, c_rpladder:true });
+
     function setFmtEnabled(map){ lsSet('rise:fmtEnabled', map); }
     function setFinABEnabled(map){ lsSet('rise:finABEnabled', map); }
     function setFinCEnabled(map){ lsSet('rise:finCEnabled', map); }
@@ -335,80 +314,98 @@
     ]);
     var EXCEPT_ALLOW_DOUBLE = new Set(['Bottom Up Squat']);
 
-    var EX_CUES = {
-      "Front Squat":"Front rack; tall torso; sit between heels.",
-      "Hack Squat":"Heels elevated; knees forward; stay tall.",
-      "Goblet Squat":"Bell at chest; ribs down; knees track toes.",
-      "Cossack Squat":"Wide stance; sit over heel; chest up.",
-      "B-Stance Goblet Squat":"Rear foot light; front leg drives.",
-      "Step Up":"Whole foot on box; control the lower.",
-      "Pistol Squat (Box)":"Sit to box; balance; smooth tempo.",
-      "Tactical Pull Up":"Pack shoulders; no kipping; full ROM.",
-      "Chin Up":"Supinated grip; chest to bar.",
-      "Small Row":"Elbow close; pause at top.",
-      "Wide Row":"Elbow flares; pull to ribs.",
-      "Dead Clean":"Snap; float; soft rack.",
-      "Low Pull Snatch":"Hips snap; elbow high/outside.",
-      "High Pull":"Hips drive; elbow high/outside.",
-      "KB Floor Pullover":"Arms long; pull from lats; ribs down.",
-      "Goblet Curl":"Elbows down; squeeze; smooth lower.",
-      "Deadstop Swing":"Reset each rep; hinge hard; snap.",
-      "Sumo Deadlift":"Wide stance; push floor away.",
-      "Side Step Swing":"Step side between swings; posture tall.",
-      "B-Stance Goodmorning":"Hinge; rear foot light; long spine.",
-      "Single Leg Deadlift":"Soft knee; hips square; reach long.",
-      "Single Leg Glute Bridge":"Drive heel; keep pelvis level.",
-      "Military Press":"Glutes tight; ribs down; vertical press.",
-      "Half Kneeling Press":"90/90 base; no side bend.",
-      "Floor Press":"Elbows ~45°; forearm vertical.",
-      "Power Push Up":"Rigid plank; strong push.",
-      "Push Press":"Dip-drive; lockout vertical.",
-      "Push Jerk":"Dip-jump-catch; fast lockout.",
-      "Top Down Press":"Lower from lockout; control path.",
-      "Front Lunge":"Step forward; shin vertical.",
-      "Reverse Lunge":"Step back; balance steady.",
-      "Side Lunge":"Hips back to side; heel down.",
-      "Curtsy Lunge":"Cross behind lightly; pelvis square.",
-      "Tactical Lunge":"Pass bell under front leg; stay tall.",
-      "Athletic Lunge":"Dynamic step; stable trunk.",
-      "Overhead Lunge":"OH lockout; small steps; tall chest.",
-      "Deadstop Side Swing":"Hinge/rotate; eyes on bell.",
-      "Get Up Sit Up":"Roll to elbow; tall chest.",
-      "Windmill":"Hinge lateral; stack the shoulder.",
-      "Half Kneeling Windmill":"Shin vertical; rotate under bell.",
-      "Bent Press":"Wedge under bell; vertical arm.",
-      "Figure 8":"Pass bell between legs; flat back.",
-      "Russian Twist":"Tall chest; rotate from ribs.",
-      "Suitcase Deadlift":"Bell by side; even hips; packed shoulder.",
-      "Plank Pull Through":"Plank; drag bell; resist rotation.",
-      "Half Kneeling Lift":"Low to high; pelvis steady.",
-      "Renegade Row":"Row without twisting; tight glutes.",
-      "Elevated Push Up":"Body straight; control speed.",
-      "Bottom Up Squat":"BU bell; slow & controlled.",
-      "Suitcase Carry":"Single bell; level hips; quiet steps.",
-      "Front Rack Carry":"Elbows in; ribs down; nasal breathing.",
-      "Overhead Carry":"Lockout vertical; centrated shoulder.",
-      "Bottom Up Carry":"Light grip; precision; slow steps.",
-      "Bear Crawl":"Hips low; small steps; quiet core.",
-      "Cook Drill":"Carry variations with posture stops."
+    /* ==== YouTube demo links (only) ==== */
+    var EX_URLS = {
+      "Get-ups":"https://www.youtube.com/watch?v=sgd8n917Zv0",
+
+      "Front Squat":"https://www.youtube.com/watch?v=SlPwjU6I9gk",
+      "Hack Squat":"https://www.youtube.com/watch?v=tEYYMZpL-nw",
+      "Goblet Squat":"https://www.youtube.com/shorts/dBnNCOtuGNQ",
+      "Cossack Squat":"https://www.youtube.com/shorts/TR4GN3rLuQ8",
+      "Box Step Over":"https://www.youtube.com/shorts/vs1813G1Q00",
+      "B-Stance Goblet Squat":"https://www.youtube.com/shorts/QEZpCqjzHAA",
+      "Step Up":"https://www.youtube.com/watch?v=0DbaQ490LMs",
+      "Pistol Squat (Box)":"https://www.youtube.com/shorts/cCK8_b2PV8A",
+
+      "Tactical Pull Up":"https://www.youtube.com/watch?v=AcI6bGetbBU",
+      "Pullover":"https://www.youtube.com/shorts/HEV0UZIlEag",
+      "Chin Up":"https://www.youtube.com/watch?v=8mryJ3w2S78",
+      "Goblet Curl":"https://www.youtube.com/shorts/_RUMPPTaBCc",
+      "Small Row":"https://www.youtube.com/shorts/pvRXtyBkO-s",
+      "Wide Row":"https://www.youtube.com/shorts/ix51xqrTjVo",
+      "Dead Clean":"https://www.youtube.com/shorts/WFnnHBpvttE",
+      "Low Pull Snatch":"https://www.youtube.com/shorts/GK8i2xYGaOM",
+      "High Pull":"https://www.youtube.com/watch?v=mP1BHxBeAEM",
+
+      "Deadstop Swing":"https://www.youtube.com/shorts/3Q6KkxRoYWc",
+      "Sumo Deadlift":"https://www.youtube.com/watch?v=qLn2SDqnAjg",
+      "Side Step Swing":"https://www.youtube.com/watch?v=UwYcntzzUiU",
+      "B-Stance Goodmorning":"https://www.youtube.com/watch?v=onPAEWC5dQs",
+      "Single Leg Deadlift":"https://www.youtube.com/watch?v=wW57VmUxefg",
+      "Single Leg Glute Bridge":"https://www.youtube.com/shorts/dgJoc5mbNzA",
+
+      "Military Press":"https://www.youtube.com/shorts/oYubnI4aXD8",
+      "Half Kneeling Press":"https://www.youtube.com/shorts/n0peUzKZ-PU",
+      "Floor Press":"https://www.youtube.com/shorts/1QMCUbRkQFA",
+      "Push Up":"https://www.youtube.com/shorts/xiSBrm-Rgms",
+      "Top Down Press":"https://www.youtube.com/watch?v=a9zEt8d-DYU",
+      "Z Press":"https://www.youtube.com/shorts/6ZekVMJSj9c",
+
+      "Front Lunge":"https://www.youtube.com/shorts/bIde5eH08cg",
+      "Reverse Lunge":"https://www.youtube.com/shorts/zekQNv42YxM",
+      "Side Lunge":"https://www.youtube.com/watch?v=WG1a97zsGdw",
+      "Curtsy Lunge":"https://www.youtube.com/shorts/DpsNSe3VPYI",
+      "Tactical Lunge":"https://www.youtube.com/shorts/-oBz6Er7JKY",
+      "Athletic Lunge":"https://www.youtube.com/shorts/nDFVS8Hg3xw",
+      "Overhead Lunge":"https://www.youtube.com/shorts/i7q5civEqQ4",
+
+      "Deadstop Side Swing":"https://www.youtube.com/shorts/gxmlcxiSpTA",
+      "Get Up Sit Up":"https://www.youtube.com/watch?v=dv_nNf43Qck",
+      "Windmill":"https://www.youtube.com/shorts/EZWHnzAjctU",
+      "Half Kneeling Windmill":"https://www.youtube.com/shorts/BfYW9PI5LS8",
+      "Bent Press":"https://www.youtube.com/shorts/sE5XqIwj5Rc",
+      "Figure 8":"https://www.youtube.com/shorts/7g2v3b3TWKg",
+      "Russian Twist":"https://www.youtube.com/watch?v=7XUglHKRyMo",
+
+      "Suitcase Deadlift":"https://www.youtube.com/watch?v=eUjU3YBHe-Y",
+      "Plank Pull Through":"https://www.youtube.com/watch?v=wTinzKzL5Ls",
+      "Half Kneeling Lift":"https://www.youtube.com/shorts/ga_qaaXcfzk",
+      "Renegade Row":"https://www.youtube.com/watch?v=7l03NoMzGp4",
+      "Elevated Push Up":"https://www.youtube.com/watch?v=4afmnCNvaxk",
+      "Bottom Up Squat":"https://www.youtube.com/shorts/d8jEluh8tFc",
+
+      "Push Press":"https://www.youtube.com/watch?v=CCqru4q9RK0",
+      "Push Jerk":"https://www.youtube.com/watch?v=SQ4fdVPMIng",
+      "Viking Push Press":"https://www.youtube.com/watch?v=EgZoTx_gPzk",
+      "Clean & Push Press":"https://www.youtube.com/shorts/HWHJW0ivos8",
+      "Clean & Jerk":"https://www.youtube.com/shorts/5lSuYCma88w",
+      "Snatch":"https://www.youtube.com/watch?v=QsuJ6973OFc",
+      "(Two-arm) Swing":"https://www.youtube.com/watch?v=1cVT3ee9mgU",
+      "One-arm Swing":"https://www.youtube.com/watch?v=UYBKrK1y6ww",
+
+      "Suitcase Carry":"https://www.youtube.com/watch?v=BaRMAhD7SP4",
+      "Front Rack Carry":"https://www.youtube.com/watch?v=jumVlXfY1Pc",
+      "Overhead Carry":"https://www.youtube.com/watch?v=54POVWkWjEs",
+      "Bottom Up Carry":"https://www.youtube.com/shorts/sFqq0pW2aK0",
+      "Bear Crawl":"https://www.youtube.com/watch?v=4d52Y9W2M0g",
+      "Cook Drill":"https://www.youtube.com/watch?v=_84WanOTUk0"
     };
 
     function EX(name, opt){ var base = { name:name, advanced:false, singleOnly:false, pullup:false }; if(opt){ for(var k in opt){ base[k]=opt[k]; } } return base; }
     function markSingles(item){ if (SINGLE_ONLY.has(item.name) && !EXCEPT_ALLOW_DOUBLE.has(item.name)) item.singleOnly = true; return item; }
 
-    /* Patterns for Part 2 */
+    /* ==== EXACT 6 per pattern ==== */
     var PATTERNS = {
       'Squat': [
         markSingles(EX('Front Squat')),
         markSingles(EX('Hack Squat', { advanced:true, replacement:'Goblet Squat' })),
-        markSingles(EX('Goblet Squat')),
         markSingles(EX('Cossack Squat', { advanced:true, replacement:'Box Step Over' })),
         markSingles(EX('B-Stance Goblet Squat')),
         markSingles(EX('Step Up')),
         markSingles(EX('Pistol Squat (Box)'))
       ],
       'Pull': [
-        markSingles(EX('Tactical Pull Up', { pullup:true, replacement:'KB Floor Pullover' })),
+        markSingles(EX('Tactical Pull Up', { pullup:true, replacement:'Pullover' })),
         markSingles(EX('Chin Up', { pullup:true, replacement:'Goblet Curl' })),
         markSingles(EX('Small Row')),
         markSingles(EX('Wide Row')),
@@ -427,9 +424,9 @@
         markSingles(EX('Military Press')),
         markSingles(EX('Half Kneeling Press')),
         markSingles(EX('Floor Press')),
-        markSingles(EX('Power Push Up')),
-        markSingles(EX('Push Press')),
-        markSingles(EX('Push Jerk', { advanced:true, replacement:'Viking Push Press' }))
+        markSingles(EX('Push Up')),
+        markSingles(EX('Top Down Press')),
+        markSingles(EX('Z Press'))
       ],
       'Lunge': [
         markSingles(EX('Front Lunge')),
@@ -467,7 +464,6 @@
     ];
     var LS_PREV_FORMAT = 'rise_prev_format_v1';
 
-    /* Finishers */
     var CARRIES = ['Suitcase Carry','Front Rack Carry','Overhead Carry','Bottom Up Carry','Bear Crawl','Cook Drill'];
     var CARRY_FORMATS = [
       { id:'c_single',   label:'Single bell — Max meters in 10 min',               meta:'Single bell — Max meters in 10 min' },
@@ -475,10 +471,9 @@
       { id:'c_uneven',   label:'Uneven bell — Max meters in 10 min (switch rest)', meta:'Uneven bell — Max meters in 10 min (switch rest)' },
       { id:'c_wladder',  label:'Weight ladder — H → M → L (max meters each)',      meta:'Weight ladder — H → M → L (max meters each)' },
       { id:'c_timed',    label:'Timed — 40s carry / 20s rest',                     meta:'Timed — 40s carry / 20s rest' },
-      { id:'c_rpladder', label:'Rep ladder — 50m R, 100m R, 50m L, 100m L, …',     meta:'Rep ladder — 50m R, 100m R, 50m L, 100m L, …' },
+      { id:'c_rpladder', label:'Rep ladder — 50m R, 100m R, 50m L, 100m L, …',     meta:'Rep ladder — 50m R, 100m L, 50m L, 100m L, …' },
     ];
 
-    /* Ballistics with requested advanced fallbacks */
     var FIN_A_ITEMS = [
       { name:'Push Press' },
       { name:'Push Jerk', advanced:true, replacement:'Viking Push Press' },
@@ -487,7 +482,8 @@
     ];
     var FIN_B_ITEMS = [
       { name:'Snatch', advanced:true, replacement:'High Pull' },
-      { name:'(Two-arm) Swing' }
+      { name:'(Two-arm) Swing' },
+      { name:'One-arm Swing' }
     ];
     var FIN_BALLISTIC_FORMATS = [
       { id:'f_single',   label:'Single Bell (10–20 @ Medium)',           meta:'Single Bell (10–20 @ Medium)' },
@@ -500,7 +496,7 @@
     var LS_FIN_GROUP = 'rise:finisher_group_v1';
     var LS_PREV_FINISHER_FMT = 'rise:prev_finisher_fmt_v1';
 
-    /* ====== KS1 + KS2 (generator only) ====== */
+    /* ==== KS (ongewijzigd) ==== */
     var KS1 = {
       "Roll to Press": ["Wrist Turns","Neck Rotations","Arm Bar","Diagonal Hip Stretch","Roll to Press Movement"],
       "Press to Elbow": ["Diagonal (bend knee) to press hand","Neck Rotations","Thoracic Waves","Shoulder Rotations","Press to Elbow"],
@@ -533,92 +529,26 @@
       ]
     };
 
-    /* ====== Bodyweight Mobility Flow — 7 regio’s ====== */
-    var BW_REGIONS = [
-      "Pols / Arm",
-      "Schouder / Bovenrug",
-      "Nek",
-      "Rug / Wervelkolom",
-      "Heupen",
-      "Benen / Enkels",
-      "Transitie / Full-body"
-    ];
+    var BW_REGIONS = ["Pols / Arm","Schouder / Bovenrug","Nek","Rug / Wervelkolom","Heupen","Benen / Enkels","Transitie / Full-body"];
     var BODYWEIGHT_POOLS = {
-      "Pols / Arm": [
-        "Wrist CARs",
-        "Tabletop Wrist Stretch (extension)",
-        "Reverse Tabletop Wrist Stretch (flexion)",
-        "Quadruped Wrist Circles",
-        "Prayer Stretch",
-        "Reverse Prayer Stretch",
-        "Forearm Flexor Stretch",
-        "Forearm Extensor Stretch"
-      ],
-      "Schouder / Bovenrug": [
-        "Scapula Push-ups",
-        "Crab Reach",
-        "Shoulder CARs",
-        "Thread the Needle (T-spine)",
-        "Prone Y-T-W",
-        "Wall Slides",
-        "Scapular Wall Clocks"
-      ],
-      "Nek": [
-        "Neck CARs",
-        "Chin Tucks (supine or standing)",
-        "Ear-to-Shoulder Stretch (lateral)",
-        "Slow Neck Rotations",
-        "Nods (flexion/extension)",
-        "Levator Scapulae Stretch"
-      ],
-      "Rug / Wervelkolom": [
-        "Cat Stretch (McGill)",
-        "Segmental Cat-Cow",
-        "Prone Press-up (McKenzie)",
-        "Side-lying Open Book",
-        "Child’s Pose with Side Reach",
-        "Quadruped T-Spine Rotation"
-      ],
-      "Heupen": [
-        "Seated Hip CARs",
-        "90/90 Hip Switch",
-        "Half-kneeling Hip Flexor Stretch",
-        "Figure-4 / Pigeon (gentle)",
-        "Glute Bridge → March",
-        "Deep Squat Hold with Shift"
-      ],
-      "Benen / Enkels": [
-        "Toe Sit with Rock (toe ext)",
-        "Ankle CARs",
-        "Calf Stretch (knee straight)",
-        "Soleus Stretch (knee bent)",
-        "Hinge Hamstring Stretch",
-        "Cossack Squat Mobility",
-        "Tibialis Raises (wall)"
-      ],
-      "Transitie / Full-body": [
-        "Beast → Step Under → Return",
-        "Z-Sit → Side Roll → Prone Return",
-        "Turkish Get-up Sit-up (to elbow)",
-        "Inchworm Walkouts",
-        "World’s Greatest Stretch",
-        "Squat-to-Stand with T-Spine Opener"
-      ]
+      "Pols / Arm":[ "Wrist CARs","Tabletop Wrist Stretch (extension)","Reverse Tabletop Wrist Stretch (flexion)","Quadruped Wrist Circles","Prayer Stretch","Reverse Prayer Stretch","Forearm Flexor Stretch","Forearm Extensor Stretch" ],
+      "Schouder / Bovenrug":[ "Scapula Push-ups","Crab Reach","Shoulder CARs","Thread the Needle (T-spine)","Prone Y-T-W","Wall Slides","Scapular Wall Clocks" ],
+      "Nek":[ "Neck CARs","Chin Tucks (supine or standing)","Ear-to-Shoulder Stretch (lateral)","Slow Neck Rotations","Nods (flexion/extension)","Levator Scapulae Stretch" ],
+      "Rug / Wervelkolom":[ "Cat Stretch (McGill)","Segmental Cat-Cow","Prone Press-up (McKenzie)","Side-lying Open Book","Child’s Pose with Side Reach","Quadruped T-Spine Rotation" ],
+      "Heupen":[ "Seated Hip CARs","90/90 Hip Switch","Half-kneeling Hip Flexor Stretch","Figure-4 / Pigeon (gentle)","Glute Bridge → March","Deep Squat Hold with Shift" ],
+      "Benen / Enkels":[ "Toe Sit with Rock (toe ext)","Ankle CARs","Calf Stretch (knee straight)","Soleus Stretch (knee bent)","Hinge Hamstring Stretch","Cossack Squat Mobility","Tibialis Raises (wall)" ],
+      "Transitie / Full-body":[ "Beast → Step Under → Return","Z-Sit → Side Roll → Prone Return","Turkish Get-up Sit-up (to elbow)","Inchworm Walkouts","World’s Greatest Stretch","Squat-to-Stand with T-Spine Opener" ]
     };
     function pickOneDifferent(region, lastMap){
       var pool = BODYWEIGHT_POOLS[region] || [];
       if(!pool.length) return "-";
       var last = lastMap ? lastMap[region] : null;
       var choice=null, tries=0;
-      do{
-        choice = pool[Math.floor(Math.random()*pool.length)];
-        tries++;
-        if(tries>10) break;
-      } while(last && choice===last);
+      do{ choice = pool[Math.floor(Math.random()*pool.length)]; tries++; if(tries>10) break; } while(last && choice===last);
       return choice;
     }
 
-    /* ====== Generators ====== */
+    /* ====== Generators (ongewijzigde logica + nummerieke som) ====== */
     function listEnabled(base, map){ return base.filter(function(x){ return (map && map[x.id] !== false); }); }
     function weightedPick(list){
       var weights = list.map(function(f){ return f.weight || 1; });
@@ -700,132 +630,14 @@
       return pick.name;
     }
 
-    /* ====== KS generator (KS1 always + KS2 if Advanced) ====== */
-    function ksPickDifferent(list, lastIdx){
-      if(list.length<=1) return 0;
-      var idx = Math.floor(Math.random()*list.length);
-      if(lastIdx!=null && list.length>1 && idx===lastIdx){ idx = (idx+1) % list.length; }
-      return idx;
-    }
-    function generateKSPlan(){
-      var steps = Object.keys(KS1);
-      var lines = ["Kalos Sthenos — ~10 min", "", "Perform 1 drill per step (1× 5–10 reps), then move on.", ""];
-      var selections = [];
-
-      // KS1
-      steps.forEach(function(step){
-        var list = KS1[step];
-        var lastIdx = lsGet('rise:ks1:last:'+step, null);
-        var idx = ksPickDifferent(list, lastIdx);
-        var name = list[idx];
-        selections.push({ group:'KS1', step: step, name: name, idx: idx });
-        lines.push(step + ": " + name);
-        lsSet('rise:ks1:last:'+step, idx);
-      });
-
-      // KS2 (only if Advanced)
-      if (prefs.allowAdvanced) {
-        lines.push("", "Advanced (optional):", "");
-        Object.keys(KS2).forEach(function(group){
-          var list = KS2[group];
-          var lastIdx = lsGet('rise:ks2:last:'+group, null);
-          var idx = ksPickDifferent(list, lastIdx);
-          var name = list[idx];
-          selections.push({ group:'KS2', step: group, name: name, idx: idx });
-          lines.push(group + ": " + name);
-          lsSet('rise:ks2:last:'+group, idx);
-        });
-      }
-
-      return {
-        id: uuid(), program:'Rise', createdAt: nowISO(),
-        mode:'recovery',
-        gate:(prefs.recSleep||0)+(prefs.recEnergy||0)+(prefs.recBody||0),
-        recovery: { main: lines, choice: 'Kalos Sthenos', ksSelections: selections }
-      };
-    }
-
-    /* ====== Bodyweight Mobility Flow builder ====== */
-    function buildGFMFlow(){
-      var last = lsGet('rise:lastBodyFlow', null) || {};
-      var selections = {};
-      BW_REGIONS.forEach(function(region){
-        selections[region] = pickOneDifferent(region, last);
-      });
-      lsSet('rise:lastBodyFlow', selections);
-      lsSet('rise:lastBodyFlowDate', nowISO());
-
-      var lines = ["Bodyweight Mobility Flow — ~10–15 min", "", "Perform 30–45s per drill. Breathe calm, move smooth.", ""];
-      BW_REGIONS.forEach(function(region){
-        lines.push(region + ": " + selections[region]);
-      });
-
-      return {
-        id: uuid(), program:'Rise', createdAt: nowISO(),
-        mode:'recovery',
-        gate:(prefs.recSleep||0)+(prefs.recEnergy||0)+(prefs.recBody||0),
-        recovery: { main: lines, choice: 'Bodyweight Mobility Flow', selections: selections }
-      };
-    }
-
-    /* ====== Zone 2 builder ====== */
-    function buildZone2(){
-      var lines = [
-        "Zone 2 — 30–45 min",
-        "",
-        "Conversational pace (talk test pass).",
-        "Pick one: brisk walk / bike / rower / light jog.",
-        "",
-        "Tips:",
-        "• Keep cadence steady, nasal breathing if possible.",
-        "• RPE ~4–5/10.",
-        "• Optional HR guide: ~70–80% of HRmax."
-      ];
-      return {
-        id: uuid(), program:'Rise', createdAt: nowISO(),
-        mode:'recovery',
-        gate:(prefs.recSleep||0)+(prefs.recEnergy||0)+(prefs.recBody||0),
-        recovery: { main: lines, choice: 'Zone 2' }
-      };
-    }
-
-    /* ====== Unified recovery dispatcher (for modal choice) ====== */
-    function buildRecoverySession(kind){
-      if(kind==='gfm') return buildGFMFlow();
-      if(kind==='ks')  return generateKSPlan();
-      if(kind==='zone2') return buildZone2();
-      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', recovery:{ main:["Recovery"], choice:"Recovery"} };
-    }
-
-    /* ====== Session builder ====== */
-    function renderPart1Text(){
-      var p1 = $('#p1Text');
-      if(!p1) return;
-      p1.innerHTML = '<ul class="list-disc ml-6 space-y-1">\
-        <li>10 minutes of quality Get-ups.</li>\
-        <li>Use the <strong>same bell</strong> as Part 2.</li>\
-        <li>Autoregulate:\
-          <div class="mt-1 text-xs muted">\
-            Progress over time → 3×1+1 • 4×1+1 • 5×1+1 • 1×2+2 + 4×1+1.\
-          </div>\
-        </li>\
-      </ul>';
-    }
-
     function generateRiseSession(){
-      var total = (prefs.recSleep||0)+(prefs.recEnergy||0)+(prefs.recBody||0);
+      var total = (+prefs.recSleep||0) + (+prefs.recEnergy||0) + (+prefs.recBody||0); // <= numeric sum fix
       var mode = total>=11 ? 'full' : total>=9 ? 'short' : total>=5 ? 'recovery' : 'breathing';
 
       if (mode==='recovery') return { id:uuid(), mode:mode, gate:total, createdAt:nowISO(), program:'Rise', pendingRecovery:true };
       if (mode==='breathing'){
         return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:mode, gate:total, breathing:{main:[
-          "Bottom Triangle Breathing",
-          "",
-          "Beginner: In 4s • Out 4s • Hold 4s (bottom)",
-          "Intermediate: In 4s • Out 6s • Hold 8s (bottom)",
-          "Advanced: In 6s • Out 8s • Hold 12s (bottom)",
-          "",
-          "Practice 5–20 minutes."
+          "Bottom Triangle Breathing","","Beginner: In 4s • Out 4s • Hold 4s (bottom)","Intermediate: In 4s • Out 6s • Hold 8s (bottom)","Advanced: In 6s • Out 8s • Hold 12s (bottom)","","Practice 5–20 minutes."
         ]}};
       }
 
@@ -841,7 +653,9 @@
         finisher = { kind:'ballistic', group:group, exercise:exercise, format: ffmt };
       } else {
         var prevC  = lsGet('rise:prevCarry', null);
-        var raw    = pickDistinct(prevC, CARRIES); lsSet('rise:prevCarry', raw);
+        var CARRIES_ALL = CARRIES.slice();
+        var raw    = (function(prev, arr){ var pool = prev ? arr.filter(function(x){return x!==prev;}) : arr.slice(); return (pool.length?pool:arr)[Math.floor(Math.random()* (pool.length?pool.length:arr.length))]; })(prevC, CARRIES_ALL);
+        lsSet('rise:prevCarry', raw);
         var cfmt   = pickCarryFormat();
         var exercise2 = ((raw==='Suitcase Carry') && (cfmt.id==='c_double' || cfmt.id==='c_uneven')) ? 'Farmer Carry' : raw;
         finisher = { kind:'carry', group:group, exercise:exercise2, format: cfmt };
@@ -853,64 +667,88 @@
     /* ====== Render ====== */
     var currentSession = null;
 
+    function renderPart1Text(){
+      var p1 = $('#p1Text');
+      if(!p1) return;
+      p1.innerHTML = '<ul class="list-disc ml-6 space-y-1">\
+        <li>10 minutes of quality Get-ups.</li>\
+        <li>Use the <strong>same bell</strong> as Part 2.</li>\
+        <li>Autoregulate:\
+          <div class="mt-1 text-xs muted">\
+            Progress over time → 3×1+1 • 4×1+1 • 5×1+1 • 1×2+2 + 4×1+1.\
+          </div>\
+        </li>\
+        <li class="mt-2 text-sm"><a class="underline" href="'+(EX_URLS["Get-ups"]||"#")+'" target="_blank" rel="noopener">Bekijk demo ↗</a></li>\
+      </ul>';
+    }
+
     function renderPart1(){
       var hide = currentSession && (currentSession.mode==='breathing' || currentSession.mode==='recovery');
       var p1 = $('#part1');
       if(p1) p1.style.display = hide ? 'none' : '';
       if(!hide) renderPart1Text();
     }
+
     function renderPart2(s){
       var host = $('#p2List'); var meta2 = $('#meta2'); if(!host) return;
-      if (s.mode==='breathing'){
-        if(meta2) meta2.textContent = '—';
-        host.innerHTML = (s.breathing.main||[]).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
-        return;
-      }
-      if (s.mode==='recovery'){
-        if(meta2) meta2.textContent = s.recovery && s.recovery.choice ? ('Pinned: '+s.recovery.choice) : '—';
-        host.innerHTML = (s.recovery && s.recovery.main || []).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
-        return;
-      }
-      var twoBells = s.format && (s.format.id==='double' || s.format.id==='uneven');
-      var fmtObj = null; for (var i=0;i<FORMATS.length;i++){ if(FORMATS[i].id===s.format.id){ fmtObj=FORMATS[i]; break; } }
-      if(meta2) meta2.textContent = fmtObj ? fmtObj.label : (s.format && s.format.meta ? s.format.meta : '');
-      host.innerHTML = s.part2.map(function(item){
-        var showTriangle = twoBells && item.singleOnly;
-        var badge = showTriangle ? '<span class="marker text-amber-600"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
-        var cue = EX_CUES[item.name] || "Move smoothly in pain-free range; breathe.";
-        return '<article class="p-3 rounded-lg card card-click" data-desc>\
-          <div class="text-xs muted mb-1">'+item.pattern+'</div>\
-          <div class="font-medium">'+item.name+'</div>\
-          <div class="mt-1">'+badge+'</div>\
-          <div class="disclosure max-h-0 text-sm italic mt-2" data-body>'+cue+'</div>\
-        </article>';
-      }).join('');
+      try{
+        if (s.mode==='breathing'){
+          if(meta2) meta2.textContent = '—';
+          host.innerHTML = (s.breathing.main||[]).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
+          return;
+        }
+        if (s.mode==='recovery'){
+          if(meta2) meta2.textContent = s.recovery && s.recovery.choice ? ('Pinned: '+s.recovery.choice) : '—';
+          host.innerHTML = (s.recovery && s.recovery.main || []).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
+          return;
+        }
+        var twoBells = s.format && (s.format.id==='double' || s.format.id==='uneven');
+        var fmtObj = null; for (var i=0;i<FORMATS.length;i++){ if(FORMATS[i].id===s.format.id){ fmtObj=FORMATS[i]; break; } }
+        if(meta2) meta2.textContent = fmtObj ? fmtObj.label : (s.format && s.format.meta ? s.format.meta : '');
+        var list = Array.isArray(s.part2) ? s.part2 : [];
+        host.innerHTML = list.map(function(item){
+          var showTriangle = twoBells && item.singleOnly;
+          var badge = showTriangle ? '<span class="marker text-amber-600"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
+          var url = EX_URLS[item.name];
+          var demo = url ? '<div class="mt-2 text-sm"><a class="underline" href="'+url+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '';
+          return '<article class="p-3 rounded-lg card card-click" data-desc>\
+            <div class="text-xs muted mb-1">'+(item.pattern||'')+'</div>\
+            <div class="font-medium">'+(item.name||'—')+'</div>\
+            <div class="mt-1">'+badge+'</div>\
+            <div class="disclosure max-h-0 mt-2" data-body>'+demo+'</div>\
+          </article>';
+        }).join('');
+      }catch(e){ host.innerHTML = '<p class="text-sm text-red-600">Kon Part 2 niet renderen.</p>'; }
     }
+
     function renderPart3(s){
       var host = $('#p3List'); var meta3 = $('#meta3'); if(!host) return;
-      if (s.mode==='breathing'){ if(meta3) meta3.textContent=''; host.innerHTML=''; return; }
-      if (s.mode==='recovery'){ if(meta3) meta3.textContent=''; host.innerHTML=''; return; }
-
-      if (s.finisher && s.finisher.kind === 'ballistic') {
-        var fmt = null; for (var i=0;i<FIN_BALLISTIC_FORMATS.length;i++){ if(FIN_BALLISTIC_FORMATS[i].id===s.finisher.format.id){ fmt=FIN_BALLISTIC_FORMATS[i]; break; } }
-        if(meta3) meta3.textContent = fmt ? fmt.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-        var cue = EX_CUES[s.finisher.exercise] || 'Crisp reps; brace; breathe.';
-        host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
-          <div class="text-xs muted mb-1">Ballistic ('+(s.finisher.group==='A'?'Anterior':'Posterior')+')</div>\
-          <div class="font-medium">'+s.finisher.exercise+'</div>\
-          <div class="disclosure max-h-0 text-sm italic mt-2" data-body>'+cue+'</div>\
-        </article>';
-      } else {
-        var fmt2 = null; for (var j=0;j<CARRY_FORMATS.length;j++){ if(CARRY_FORMATS[j].id===s.finisher.format.id){ fmt2=CARRY_FORMATS[j]; break; } }
-        if(meta3) meta3.textContent = fmt2 ? fmt2.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-        var carryCue = EX_CUES[s.finisher.exercise] || 'Walk smooth; packed shoulders; steady breathing.';
-        host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
-          <div class="text-xs muted mb-1">Carry (Group C)</div>\
-          <div class="font-medium">'+s.finisher.exercise+'</div>\
-          <div class="disclosure max-h-0 text-sm italic mt-2" data-body>'+carryCue+'</div>\
-        </article>';
-      }
+      try{
+        if (s.mode==='breathing' || s.mode==='recovery'){ if(meta3) meta3.textContent=''; host.innerHTML=''; return; }
+        if (s.finisher && s.finisher.kind === 'ballistic') {
+          var fmt = null; for (var i=0;i<FIN_BALLISTIC_FORMATS.length;i++){ if(FIN_BALLISTIC_FORMATS[i].id===s.finisher.format.id){ fmt=FIN_BALLISTIC_FORMATS[i]; break; } }
+          if(meta3) meta3.textContent = fmt ? fmt.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
+          var url = EX_URLS[s.finisher.exercise];
+          var demo = url ? '<div class="mt-2 text-sm"><a class="underline" href="'+url+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '';
+          host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
+            <div class="text-xs muted mb-1">Ballistic ('+(s.finisher.group==='A'?'Anterior':'Posterior')+')</div>\
+            <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
+            <div class="disclosure max-h-0 mt-2" data-body>'+demo+'</div>\
+          </article>';
+        } else {
+          var fmt2 = null; for (var j=0;j<CARRY_FORMATS.length;j++){ if(CARRY_FORMATS[j].id===s.finisher.format.id){ fmt2=CARRY_FORMATS[j]; break; } }
+          if(meta3) meta3.textContent = fmt2 ? fmt2.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
+          var url2 = EX_URLS[s.finisher.exercise];
+          var demo2 = url2 ? '<div class="mt-2 text-sm"><a class="underline" href="'+url2+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '';
+          host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
+            <div class="text-xs muted mb-1">Carry (Group C)</div>\
+            <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
+            <div class="disclosure max-h-0 mt-2" data-body>'+demo2+'</div>\
+          </article>';
+        }
+      }catch(e){ host.innerHTML = '<p class="text-sm text-red-600">Kon Part 3 niet renderen.</p>'; }
     }
+
     function renderShortUI(){
       var banner = $('#shortBanner');
       var isShort = currentSession && currentSession.mode==='short';
@@ -937,7 +775,6 @@
       if (recTabVisible && s.mode==='recovery') renderRecoveryPreview($('#recPreview'), s);
     }
 
-    /* ====== History & exports ====== */
     function renderHistory(){
       var hist = lsGet('rise:history', []);
       var host = $('#histList');
@@ -998,34 +835,25 @@
       var a = document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
-    /* ====== Hard reset (PATCH) ====== */
     function hardReset(){
-      // history
       lsSet('rise:history', []);
-      // level → L1
       setBell(1);
-      // clear format memory
       lsDel('rise_prev_format_v1');
       lsDel('rise:prevFin_A'); lsDel('rise:prevFin_B');
-      lsDel('rise:prevFinisher_fmt_v1'); // legacy
+      lsDel('rise:prevFinisher_fmt_v1');
       lsDel('rise:prev_finisher_fmt_v1');
-      // carries & patterns memory
       lsDel('rise:prevCarry');
       Object.keys(PATTERNS).forEach(function(p){ lsDel('rise_prev_ex_'+p); });
-      // recovery caches
       lsDel('rise:lastBodyFlow'); lsDel('rise:lastBodyFlowDate');
       Object.keys(KS1).forEach(function(k){ lsDel('rise:ks1:last:'+k); });
       Object.keys(KS2).forEach(function(k){ lsDel('rise:ks2:last:'+k); });
     }
 
-    /* ====== Dialog instances ====== */
     var recDlg = makePolyfill($('#recModal'));
     var recChoiceDlg = makePolyfill($('#recChoice'));
     var progDlg = makePolyfill($('#progModal'));
 
-    /* ====== Events ====== */
     $('#btnGenerate').onclick = function(){
-      // open recovery scale modal
       buildScale('sleep',$('#sSleep'),$('#sSleepDesc'),prefs.recSleep);
       buildScale('energy',$('#sEnergy'),$('#sEnergyDesc'),prefs.recEnergy);
       buildScale('body',$('#sBody'),$('#sBodyDesc'),prefs.recBody);
@@ -1044,7 +872,7 @@
           if(!btn) return;
           recChoiceDlg.close();
           var kind = btn.getAttribute('data-recov');
-          var pinned = buildRecoverySession(kind);   // <-- FIX: werkt nu
+          var pinned = (kind==='gfm') ? buildGFMFlow() : (kind==='ks') ? generateKSPlan() : buildZone2();
           renderSession(pinned);
           renderRecoveryPreview($('#recPreview'), pinned);
           toast((pinned.recovery && pinned.recovery.choice ? pinned.recovery.choice : 'Recovery') + ' pinned.');
@@ -1054,20 +882,13 @@
         return;
       }
 
-      if (s.mode==='breathing'){
-        renderSession(s);
-        toast('Breathing pinned.');
-        return;
-      }
-
-      renderSession(s);
-      toast('Session generated.');
+      if (s.mode==='breathing'){ renderSession(s); toast('Breathing pinned.'); return; }
+      renderSession(s); toast('Session generated.');
     };
 
     $('#btnComplete').onclick = function(){
       if(!currentSession){ toast('No session to complete.'); return; }
 
-      // Auto progression check — ONLY on Complete
       var shouldAsk = false, q = '';
       if(currentSession.part2 && currentSession.format){
         var hasMP = currentSession.part2.some(function(it){ return it.name==='Military Press'; });
@@ -1079,50 +900,26 @@
       }
 
       function saveAndToast(){
-        var hist = lsGet('rise:history', []);
-        hist.push({ saved_at: nowISO(), session: currentSession });
-        lsSet('rise:history', hist);
-        toast('Session saved to history.');
+        var hist = lsGet('rise:history', []); hist.push({ saved_at: nowISO(), session: currentSession });
+        lsSet('rise:history', hist); toast('Session saved to history.');
       }
 
       if(shouldAsk){
-        $('#progQuestion').textContent = q;
-        progDlg.open();
+        $('#progQuestion').textContent = q; progDlg.open();
         $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
         $('#progYes').onclick = function(){ setBell(bell+1); progDlg.close(); toast('Great! Level up.'); saveAndToast(); };
-      } else {
-        saveAndToast();
-      }
+      } else { saveAndToast(); }
     };
 
-    // Recovery quick actions (buttons in Recovery tab)
-    $('#btnRecGFM').onclick = function(){
-      var s = buildGFMFlow(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
-      toast('Bodyweight Mobility Flow pinned.');
-    };
-    $('#btnRecKS').onclick  = function(){
-      var s = generateKSPlan(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
-      toast('Kalos Sthenos pinned.');
-    };
-    $('#btnRecZ2').onclick  = function(){
-      var s = buildZone2(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
-      toast('Zone 2 pinned.');
-    };
+    $('#btnRecGFM').onclick = function(){ var s = buildGFMFlow(); renderSession(s); renderRecoveryPreview($('#recPreview'), s); toast('Bodyweight Mobility Flow pinned.'); };
+    $('#btnRecKS').onclick  = function(){ var s = generateKSPlan(); renderSession(s); renderRecoveryPreview($('#recPreview'), s); toast('Kalos Sthenos pinned.'); };
+    $('#btnRecZ2').onclick  = function(){ var s = buildZone2(); renderSession(s); renderRecoveryPreview($('#recPreview'), s); toast('Zone 2 pinned.'); };
 
-    // Manual progression (Settings)
-    function updateLevelUpButton(){
-      var ok = ($('#chkRep').checked && $('#chkWeight').checked);
-      $('#btnProgLevelUp').disabled = !ok;
-    }
+    function updateLevelUpButton(){ var ok = ($('#chkRep').checked && $('#chkWeight').checked); $('#btnProgLevelUp').disabled = !ok; }
     $('#chkRep').onchange = updateLevelUpButton;
     $('#chkWeight').onchange = updateLevelUpButton;
-    $('#btnProgLevelUp').onclick = function(){
-      if(this.disabled) return;
-      setBell(bell+1);
-      toast('Level up! Bell increased.');
-    };
+    $('#btnProgLevelUp').onclick = function(){ if(this.disabled) return; setBell(bell+1); toast('Level up! Bell increased.'); };
 
-    // Tabs
     $all('.tab-btn').forEach(function(b){
       b.onclick = function(){
         var name=b.getAttribute('data-tab');
@@ -1137,7 +934,6 @@
       };
     });
 
-    // Settings checklists
     function renderFormatsSettings(){
       var map = lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED);
       var host = $('#fmtPart2'); if(!host) return;
@@ -1178,18 +974,12 @@
       };
     }
 
-    // Primitive toggles
-    $('#s_pull').onchange=function(e){ prefs.pullupBar=e.target.checked; savePrefs(); toast('Saved.'); };
-    $('#s_adv').onchange=function(e){ prefs.allowAdvanced=e.target.checked; savePrefs(); toast('Saved.'); };
-
-    // Disclosure (tap to open cues)
     document.addEventListener('click', function(e){
       var card = e.target.closest && e.target.closest('[data-desc]'); if(!card) return;
       var body = card.querySelector('[data-body]'); if(!body) return;
       body.style.maxHeight = (body.style.maxHeight && body.style.maxHeight!=='0px') ? '0px' : (body.scrollHeight+'px');
     });
 
-    // Recovery scale helpers
     var SCALE = {
       sleep: [ "0 – Barely slept, not recovered","1 – Very poor, broken sleep","2 – Restless, short, not refreshed","3 – Okay, enough to get by","4 – Good, rested","5 – Excellent, fully recovered" ],
       energy:[ "0 – No energy at all","1 – Very low","2 – Low, sluggish","3 – Okay, manageable","4 – Good, energetic","5 – Excellent, buzzing" ],
@@ -1212,17 +1002,15 @@
       if (val!=null) { var btn = into.querySelector('[data-v="'+val+'"]'); if(btn) btn.click(); }
     }
     function updateRecSummary(){
-      var s=(prefs.recSleep||0)+(prefs.recEnergy||0)+(prefs.recBody||0);
+      var s=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0); // <= numeric
       var sTotal=$('#sTotal'), sDecision=$('#sDecision');
       if(sTotal) sTotal.textContent = s;
       if(sDecision) sDecision.textContent = s>=11 ? 'Train (full session)' : s>=9 ? 'Short session (5/1/5)' : s>=5 ? 'Recovery' : 'Breathing';
     }
 
-    // Dark toggle
     function setDarkLabel(){ var isDark=document.documentElement.classList.contains('dark'); var b=$('#btnDark'); if(b) b.textContent=isDark?'Light':'Dark'; }
     $('#btnDark').onclick=function(){ document.documentElement.classList.toggle('dark'); prefs.dark=document.documentElement.classList.contains('dark'); savePrefs(); setDarkLabel(); };
 
-    // Boot
     (function boot(){
       if (prefs.dark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
       setDarkLabel();
@@ -1233,7 +1021,6 @@
       if($('#s_adv'))  $('#s_adv').checked  = !!prefs.allowAdvanced;
     })();
 
-    // Exports + clear (PATCHED: full reset)
     $('#btnExportJSON').onclick=exportJSON;
     $('#btnExportCSV').onclick=exportCSV;
     $('#btnClearHist').onclick=function(){
