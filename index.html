@@ -10,10 +10,18 @@
     :root { color-scheme: light dark; }
     body { -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 
+    /* Theme tokens */
     :root{
-      --fg:#0f172a; --fg-muted:#475569; --bg:#f1f5f9; --ok:#059669;
+      --fg:#0f172a;
+      --fg-muted:#475569;
+      --bg:#f1f5f9;
+      --ok:#059669;
     }
-    html.dark{ --fg:#e5e7eb; --fg-muted:#cbd5e1; --bg:#0f172a; }
+    html.dark{
+      --fg:#e5e7eb;
+      --fg-muted:#cbd5e1;
+      --bg:#0f172a;
+    }
     body{ color:var(--fg); background:var(--bg); }
     .muted{ color:var(--fg-muted); }
 
@@ -75,10 +83,20 @@
     .dlg-polyfill .dlg-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
     .dlg-polyfill .dlg-panel { position:relative; margin:8vh auto; width:min(92vw,520px); border-radius:0.75rem; overflow:hidden; }
     .dlg-polyfill.open { display:block; }
+
+    /* Kleine oefening-thumbnails in de kaarten */
+    .thumb {
+      width: 84px; height: 48px; border-radius: .5rem;
+      object-fit: cover; flex: 0 0 auto;
+    }
+    @media (min-width: 640px){
+      .thumb { width: 120px; height: 68px; }
+    }
   </style>
 </head>
 <body class="min-h-screen">
   <div class="max-w-3xl mx-auto px-4 py-4">
+    <!-- Topbar -->
     <div class="flex items-start justify-between">
       <div>
         <h1 class="text-xl font-bold">Rise</h1>
@@ -90,6 +108,7 @@
       </div>
     </div>
 
+    <!-- Tabs -->
     <div class="mt-3 flex gap-2">
       <button data-tab="train" class="tab-btn active">Train</button>
       <button data-tab="recovery" class="tab-btn">Recovery / Rest Day</button>
@@ -97,6 +116,7 @@
       <button data-tab="settings" class="tab-btn">Settings</button>
     </div>
 
+    <!-- TRAIN -->
     <div id="tab-train" class="mt-3">
       <section class="card rounded-xl">
         <header class="px-4 py-3 border-b border-black/10 dark:border-white/10 flex justify-between">
@@ -118,7 +138,7 @@
             <div id="p2List" class="mt-2 grid sm:grid-cols-2 gap-2"></div>
           </section>
           <section id="part3" class="card rounded-xl p-3 mt-3">
-            <h3 class="font-semibold">Part 3 — Finisher</h3>
+            <h3 class="font-semibold">Part 3 — Finisher (10 min)</h3>
             <div id="meta3" class="text-xs muted mt-1"></div>
             <div id="p3List" class="mt-2 grid sm:grid-cols-2 gap-2"></div>
           </section>
@@ -126,6 +146,7 @@
       </section>
     </div>
 
+    <!-- RECOVERY -->
     <div id="tab-recovery" class="hidden mt-3">
       <section class="card rounded-xl p-4 space-y-3">
         <h3 class="font-semibold">Recovery / Rest Day</h3>
@@ -142,6 +163,7 @@
       </section>
     </div>
 
+    <!-- HISTORY -->
     <div id="tab-history" class="hidden mt-3">
       <section class="card rounded-xl p-4">
         <div class="flex items-center justify-between">
@@ -156,6 +178,7 @@
       </section>
     </div>
 
+    <!-- SETTINGS -->
     <div id="tab-settings" class="hidden mt-3">
       <section class="card rounded-xl p-4 space-y-4">
         <div class="flex justify-between">
@@ -182,6 +205,7 @@
           <div id="fmtFinC" class="set-list space-y-1"></div>
         </div>
 
+        <!-- Manual Progression -->
         <div class="border-t border-black/10 dark:border-white/10 pt-3">
           <h4 class="font-semibold mb-2">Manual Progression Check</h4>
           <p class="text-sm muted mb-2">
@@ -255,7 +279,7 @@
     </div>
   </dialog>
 
-  <!-- Progression Modal -->
+  <!-- Progression Modal (auto — only on Complete) -->
   <dialog id="progModal" class="rounded-xl p-0 w-[420px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
     <div class="p-4 border-b border-black/10 dark:border-white/10">
       <h3 class="font-semibold">Progression Check</h3>
@@ -269,6 +293,7 @@
 
   <script>
   (function(){
+    /* ====== Utils ====== */
     function $(q,root){ return (root||document).querySelector(q); }
     function $all(q,root){ return Array.prototype.slice.call((root||document).querySelectorAll(q)); }
     function lsGet(k, fallback){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
@@ -292,16 +317,17 @@
       return { open:function(){ wrap.classList.add('open'); }, close:function(){ wrap.classList.remove('open'); } };
     }
 
+    /* ====== State ====== */
     var prefs = lsGet('rise:prefs', { pullupBar:true, allowAdvanced:true, dark:true, recSleep:null, recEnergy:null, recBody:null });
     function savePrefs(){ lsSet('rise:prefs', prefs); }
     var bell = lsGet('rise:bellLevel', 1);
     function setBell(n){ bell = Math.max(1, n|0); lsSet('rise:bellLevel', bell); reflectBell(); }
     function reflectBell(){ var b=$('#bellBadge'); if(b) b.textContent='Bell L'+bell; var l=$('#lblBell'); if(l) l.textContent='L'+bell; }
 
+    /* ====== Config ====== */
     var DEFAULT_FMT_ENABLED = lsGet('rise:fmtEnabled', { single:true, repLadder:true, weightLadder:true, double:true, timed:true, uneven:true });
     var DEFAULT_FIN_AB_ENABLED = lsGet('rise:finABEnabled', { f_single:true, f_rpladder:true, f_wladder:true, f_double:true, f_uneven:true, f_timed:true });
     var DEFAULT_FIN_C_ENABLED  = lsGet('rise:finCEnabled',  { c_single:true, c_double:true, c_uneven:true, c_wladder:true, c_timed:true, c_rpladder:true });
-
     function setFmtEnabled(map){ lsSet('rise:fmtEnabled', map); }
     function setFinABEnabled(map){ lsSet('rise:finABEnabled', map); }
     function setFinCEnabled(map){ lsSet('rise:finCEnabled', map); }
@@ -314,7 +340,7 @@
     ]);
     var EXCEPT_ALLOW_DOUBLE = new Set(['Bottom Up Squat']);
 
-    /* ==== YouTube demo links (only) ==== */
+    /* ====== YouTube demo links (alleen links) ====== */
     var EX_URLS = {
       "Get-ups":"https://www.youtube.com/watch?v=sgd8n917Zv0",
 
@@ -464,6 +490,7 @@
     ];
     var LS_PREV_FORMAT = 'rise_prev_format_v1';
 
+    /* Finishers */
     var CARRIES = ['Suitcase Carry','Front Rack Carry','Overhead Carry','Bottom Up Carry','Bear Crawl','Cook Drill'];
     var CARRY_FORMATS = [
       { id:'c_single',   label:'Single bell — Max meters in 10 min',               meta:'Single bell — Max meters in 10 min' },
@@ -474,10 +501,10 @@
       { id:'c_rpladder', label:'Rep ladder — 50m R, 100m R, 50m L, 100m L, …',     meta:'Rep ladder — 50m R, 100m L, 50m L, 100m L, …' },
     ];
 
+    /* Ballistics (A/B) — geen Clean & Press hier */
     var FIN_A_ITEMS = [
       { name:'Push Press' },
       { name:'Push Jerk', advanced:true, replacement:'Viking Push Press' },
-      { name:'Clean & Press' },
       { name:'Clean & Jerk', advanced:true, replacement:'Clean & Push Press' }
     ];
     var FIN_B_ITEMS = [
@@ -496,7 +523,7 @@
     var LS_FIN_GROUP = 'rise:finisher_group_v1';
     var LS_PREV_FINISHER_FMT = 'rise:prev_finisher_fmt_v1';
 
-    /* ==== KS (ongewijzigd) ==== */
+    /* ====== KS1 + KS2 (generator only) ====== */
     var KS1 = {
       "Roll to Press": ["Wrist Turns","Neck Rotations","Arm Bar","Diagonal Hip Stretch","Roll to Press Movement"],
       "Press to Elbow": ["Diagonal (bend knee) to press hand","Neck Rotations","Thoracic Waves","Shoulder Rotations","Press to Elbow"],
@@ -529,26 +556,92 @@
       ]
     };
 
-    var BW_REGIONS = ["Pols / Arm","Schouder / Bovenrug","Nek","Rug / Wervelkolom","Heupen","Benen / Enkels","Transitie / Full-body"];
+    /* ====== Bodyweight Mobility Flow — 7 regio’s ====== */
+    var BW_REGIONS = [
+      "Pols / Arm",
+      "Schouder / Bovenrug",
+      "Nek",
+      "Rug / Wervelkolom",
+      "Heupen",
+      "Benen / Enkels",
+      "Transitie / Full-body"
+    ];
     var BODYWEIGHT_POOLS = {
-      "Pols / Arm":[ "Wrist CARs","Tabletop Wrist Stretch (extension)","Reverse Tabletop Wrist Stretch (flexion)","Quadruped Wrist Circles","Prayer Stretch","Reverse Prayer Stretch","Forearm Flexor Stretch","Forearm Extensor Stretch" ],
-      "Schouder / Bovenrug":[ "Scapula Push-ups","Crab Reach","Shoulder CARs","Thread the Needle (T-spine)","Prone Y-T-W","Wall Slides","Scapular Wall Clocks" ],
-      "Nek":[ "Neck CARs","Chin Tucks (supine or standing)","Ear-to-Shoulder Stretch (lateral)","Slow Neck Rotations","Nods (flexion/extension)","Levator Scapulae Stretch" ],
-      "Rug / Wervelkolom":[ "Cat Stretch (McGill)","Segmental Cat-Cow","Prone Press-up (McKenzie)","Side-lying Open Book","Child’s Pose with Side Reach","Quadruped T-Spine Rotation" ],
-      "Heupen":[ "Seated Hip CARs","90/90 Hip Switch","Half-kneeling Hip Flexor Stretch","Figure-4 / Pigeon (gentle)","Glute Bridge → March","Deep Squat Hold with Shift" ],
-      "Benen / Enkels":[ "Toe Sit with Rock (toe ext)","Ankle CARs","Calf Stretch (knee straight)","Soleus Stretch (knee bent)","Hinge Hamstring Stretch","Cossack Squat Mobility","Tibialis Raises (wall)" ],
-      "Transitie / Full-body":[ "Beast → Step Under → Return","Z-Sit → Side Roll → Prone Return","Turkish Get-up Sit-up (to elbow)","Inchworm Walkouts","World’s Greatest Stretch","Squat-to-Stand with T-Spine Opener" ]
+      "Pols / Arm": [
+        "Wrist CARs",
+        "Tabletop Wrist Stretch (extension)",
+        "Reverse Tabletop Wrist Stretch (flexion)",
+        "Quadruped Wrist Circles",
+        "Prayer Stretch",
+        "Reverse Prayer Stretch",
+        "Forearm Flexor Stretch",
+        "Forearm Extensor Stretch"
+      ],
+      "Schouder / Bovenrug": [
+        "Scapula Push-ups",
+        "Crab Reach",
+        "Shoulder CARs",
+        "Thread the Needle (T-spine)",
+        "Prone Y-T-W",
+        "Wall Slides",
+        "Scapular Wall Clocks"
+      ],
+      "Nek": [
+        "Neck CARs",
+        "Chin Tucks (supine or standing)",
+        "Ear-to-Shoulder Stretch (lateral)",
+        "Slow Neck Rotations",
+        "Nods (flexion/extension)",
+        "Levator Scapulae Stretch"
+      ],
+      "Rug / Wervelkolom": [
+        "Cat Stretch (McGill)",
+        "Segmental Cat-Cow",
+        "Prone Press-up (McKenzie)",
+        "Side-lying Open Book",
+        "Child’s Pose with Side Reach",
+        "Quadruped T-Spine Rotation"
+      ],
+      "Heupen": [
+        "Seated Hip CARs",
+        "90/90 Hip Switch",
+        "Half-kneeling Hip Flexor Stretch",
+        "Figure-4 / Pigeon (gentle)",
+        "Glute Bridge → March",
+        "Deep Squat Hold with Shift"
+      ],
+      "Benen / Enkels": [
+        "Toe Sit with Rock (toe ext)",
+        "Ankle CARs",
+        "Calf Stretch (knee straight)",
+        "Soleus Stretch (knee bent)",
+        "Hinge Hamstring Stretch",
+        "Cossack Squat Mobility",
+        "Tibialis Raises (wall)"
+      ],
+      "Transitie / Full-body": [
+        "Beast → Step Under → Return",
+        "Z-Sit → Side Roll → Prone Return",
+        "Turkish Get-up Sit-up (to elbow)",
+        "Inchworm Walkouts",
+        "World’s Greatest Stretch",
+        "Squat-to-Stand with T-Spine Opener"
+      ]
     };
     function pickOneDifferent(region, lastMap){
       var pool = BODYWEIGHT_POOLS[region] || [];
       if(!pool.length) return "-";
       var last = lastMap ? lastMap[region] : null;
       var choice=null, tries=0;
-      do{ choice = pool[Math.floor(Math.random()*pool.length)]; tries++; if(tries>10) break; } while(last && choice===last);
+      do{
+        choice = pool[Math.floor(Math.random()*pool.length)];
+        tries++;
+        if(tries>10) break;
+      } while(last && choice===last);
       return choice;
     }
 
-    /* ====== Generators (ongewijzigde logica + nummerieke som) ====== */
+    /* ====== Generators ====== */
     function listEnabled(base, map){ return base.filter(function(x){ return (map && map[x.id] !== false); }); }
     function weightedPick(list){
       var weights = list.map(function(f){ return f.weight || 1; });
@@ -630,14 +723,150 @@
       return pick.name;
     }
 
+    /* ====== Recovery builders ====== */
+    function generateKSPlan(){
+      var steps = Object.keys(KS1);
+      var lines = ["Kalos Sthenos — ~10 min", "", "Perform 1 drill per step (1× 5–10 reps), then move on.", ""];
+      var selections = [];
+
+      // KS1
+      steps.forEach(function(step){
+        var list = KS1[step];
+        var lastIdx = lsGet('rise:ks1:last:'+step, null);
+        var idx = (function(list,lastIdx){ if(list.length<=1) return 0; var ii=Math.floor(Math.random()*list.length); if(lastIdx!=null && list.length>1 && ii===lastIdx){ ii=(ii+1)%list.length; } return ii; })(list,lastIdx);
+        var name = list[idx];
+        selections.push({ group:'KS1', step: step, name: name, idx: idx });
+        lines.push(step + ": " + name);
+        lsSet('rise:ks1:last:'+step, idx);
+      });
+
+      // KS2 (only if Advanced)
+      if (prefs.allowAdvanced) {
+        lines.push("", "Advanced (optional):", "");
+        Object.keys(KS2).forEach(function(group){
+          var list = KS2[group];
+          var lastIdx = lsGet('rise:ks2:last:'+group, null);
+          var idx = (function(list,lastIdx){ if(list.length<=1) return 0; var ii=Math.floor(Math.random()*list.length); if(lastIdx!=null && list.length>1 && ii===lastIdx){ ii=(ii+1)%list.length; } return ii; })(list,lastIdx);
+        var name = list[idx];
+          selections.push({ group:'KS2', step: group, name: name, idx: idx });
+          lines.push(group + ": " + name);
+          lsSet('rise:ks2:last:'+group, idx);
+        });
+      }
+
+      return {
+        id: uuid(), program:'Rise', createdAt: nowISO(),
+        mode:'recovery',
+        gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0),
+        recovery: { main: lines, choice: 'Kalos Sthenos', ksSelections: selections }
+      };
+    }
+    function buildGFMFlow(){
+      var last = lsGet('rise:lastBodyFlow', null) || {};
+      var selections = {};
+      BW_REGIONS.forEach(function(region){
+        selections[region] = pickOneDifferent(region, last);
+      });
+      lsSet('rise:lastBodyFlow', selections);
+      lsSet('rise:lastBodyFlowDate', nowISO());
+
+      var lines = ["Bodyweight Mobility Flow — ~10–15 min", "", "Perform 30–45s per drill. Breathe calm, move smooth.", ""];
+      BW_REGIONS.forEach(function(region){
+        lines.push(region + ": " + selections[region]);
+      });
+
+      return {
+        id: uuid(), program:'Rise', createdAt: nowISO(),
+        mode:'recovery',
+        gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0),
+        recovery: { main: lines, choice: 'Bodyweight Mobility Flow', selections: selections }
+      };
+    }
+    function buildZone2(){
+      var lines = [
+        "Zone 2 — 30–45 min",
+        "",
+        "Conversational pace (talk test pass).",
+        "Pick one: brisk walk / bike / rower / light jog.",
+        "",
+        "Tips:",
+        "• Keep cadence steady, nasal breathing if possible.",
+        "• RPE ~4–5/10.",
+        "• Optional HR guide: ~70–80% of HRmax."
+      ];
+      return {
+        id: uuid(), program:'Rise', createdAt: nowISO(),
+        mode:'recovery',
+        gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0),
+        recovery: { main: lines, choice: 'Zone 2' }
+      };
+    }
+    function buildRecoverySession(kind){
+      if(kind==='gfm') return buildGFMFlow();
+      if(kind==='ks')  return generateKSPlan();
+      if(kind==='zone2') return buildZone2();
+      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', recovery:{ main:["Recovery"], choice:"Recovery"} };
+    }
+
+    /* ====== YouTube thumbnails & demo helpers ====== */
+    function ytIdFromUrl(u){
+      try{
+        var url = new URL(u);
+        if (url.hostname.includes('youtu.be')) { return url.pathname.slice(1).split('/')[0]; }
+        if (url.pathname.startsWith('/shorts/')) { return url.pathname.split('/')[2] || null; }
+        var v = url.searchParams.get('v');
+        if (v) return v;
+        return null;
+      } catch(e){ return null; }
+    }
+    function ytThumbFromUrl(u, quality){
+      if(!u) return null;
+      var id = ytIdFromUrl(u);
+      if(!id) return null;
+      var q = quality || 'hqdefault';
+      return 'https://img.youtube.com/vi/'+id+'/'+q+'.jpg';
+    }
+    function getThumbByName(name){
+      var key = (name === 'Farmer Carry') ? 'Suitcase Carry' : name; // fallback
+      var u = EX_URLS[key];
+      return ytThumbFromUrl(u, 'hqdefault');
+    }
+    function buildDemoHtmlFor(name){
+      var key = (name === 'Farmer Carry') ? 'Suitcase Carry' : name;
+      var url = EX_URLS[key];
+      return url ? '<a class="underline" href="'+url+'" target="_blank" rel="noopener">Bekijk demo ↗</a>' : '';
+    }
+
+    /* ====== Session builder ====== */
+    function renderPart1Text(){
+      var p1 = $('#p1Text');
+      if(!p1) return;
+      p1.innerHTML = '<ul class="list-disc ml-6 space-y-1">\
+        <li>10 minutes of quality Get-ups.</li>\
+        <li>Use the <strong>same bell</strong> as Part 2.</li>\
+        <li>Autoregulate:\
+          <div class="mt-1 text-xs muted">\
+            Progress over time → 3×1+1 • 4×1+1 • 5×1+1 • 1×2+2 + 4×1+1.\
+          </div>\
+        </li>\
+        <li class="mt-2 text-sm"><a class="underline" href="'+(EX_URLS["Get-ups"]||"#")+'" target="_blank" rel="noopener">Bekijk demo ↗</a></li>\
+      </ul>';
+    }
+
     function generateRiseSession(){
-      var total = (+prefs.recSleep||0) + (+prefs.recEnergy||0) + (+prefs.recBody||0); // <= numeric sum fix
+      var total = (+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
       var mode = total>=11 ? 'full' : total>=9 ? 'short' : total>=5 ? 'recovery' : 'breathing';
 
       if (mode==='recovery') return { id:uuid(), mode:mode, gate:total, createdAt:nowISO(), program:'Rise', pendingRecovery:true };
       if (mode==='breathing'){
         return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:mode, gate:total, breathing:{main:[
-          "Bottom Triangle Breathing","","Beginner: In 4s • Out 4s • Hold 4s (bottom)","Intermediate: In 4s • Out 6s • Hold 8s (bottom)","Advanced: In 6s • Out 8s • Hold 12s (bottom)","","Practice 5–20 minutes."
+          "Bottom Triangle Breathing",
+          "",
+          "Beginner: In 4s • Out 4s • Hold 4s (bottom)",
+          "Intermediate: In 4s • Out 6s • Hold 8s (bottom)",
+          "Advanced: In 6s • Out 8s • Hold 12s (bottom)",
+          "",
+          "Practice 5–20 minutes."
         ]}};
       }
 
@@ -653,8 +882,7 @@
         finisher = { kind:'ballistic', group:group, exercise:exercise, format: ffmt };
       } else {
         var prevC  = lsGet('rise:prevCarry', null);
-        var CARRIES_ALL = CARRIES.slice();
-        var raw    = (function(prev, arr){ var pool = prev ? arr.filter(function(x){return x!==prev;}) : arr.slice(); return (pool.length?pool:arr)[Math.floor(Math.random()* (pool.length?pool.length:arr.length))]; })(prevC, CARRIES_ALL);
+        var raw    = (function(prev, arr){ var pool = prev ? arr.filter(function(x){ return x!==prev; }) : arr.slice(); return (pool.length?pool:arr)[Math.floor(Math.random()*(pool.length?pool.length:arr.length))]; })(prevC, CARRIES);
         lsSet('rise:prevCarry', raw);
         var cfmt   = pickCarryFormat();
         var exercise2 = ((raw==='Suitcase Carry') && (cfmt.id==='c_double' || cfmt.id==='c_uneven')) ? 'Farmer Carry' : raw;
@@ -664,23 +892,13 @@
       return { id: uuid(), program:'Rise', createdAt:nowISO(), mode:mode, gate: total, format: fmt, part2: part2, finisher: finisher, bellLevel: bell };
     }
 
+    /* ====== Persist current session (pin until Complete) ====== */
+    function loadCurrentSession(){ return lsGet('rise:current_session', null); }
+    function saveCurrentSession(s){ lsSet('rise:current_session', s); }
+    function clearCurrentSession(){ lsDel('rise:current_session'); }
+
     /* ====== Render ====== */
     var currentSession = null;
-
-    function renderPart1Text(){
-      var p1 = $('#p1Text');
-      if(!p1) return;
-      p1.innerHTML = '<ul class="list-disc ml-6 space-y-1">\
-        <li>10 minutes of quality Get-ups.</li>\
-        <li>Use the <strong>same bell</strong> as Part 2.</li>\
-        <li>Autoregulate:\
-          <div class="mt-1 text-xs muted">\
-            Progress over time → 3×1+1 • 4×1+1 • 5×1+1 • 1×2+2 + 4×1+1.\
-          </div>\
-        </li>\
-        <li class="mt-2 text-sm"><a class="underline" href="'+(EX_URLS["Get-ups"]||"#")+'" target="_blank" rel="noopener">Bekijk demo ↗</a></li>\
-      </ul>';
-    }
 
     function renderPart1(){
       var hide = currentSession && (currentSession.mode==='breathing' || currentSession.mode==='recovery');
@@ -709,13 +927,19 @@
         host.innerHTML = list.map(function(item){
           var showTriangle = twoBells && item.singleOnly;
           var badge = showTriangle ? '<span class="marker text-amber-600"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
-          var url = EX_URLS[item.name];
-          var demo = url ? '<div class="mt-2 text-sm"><a class="underline" href="'+url+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '';
+          var demo = buildDemoHtmlFor(item.name);
+          var thumb = getThumbByName(item.name);
+          var img = thumb ? '<img class="thumb" src="'+thumb+'" alt="'+(item.name||'')+' demo" loading="lazy" decoding="async">' : '';
           return '<article class="p-3 rounded-lg card card-click" data-desc>\
-            <div class="text-xs muted mb-1">'+(item.pattern||'')+'</div>\
-            <div class="font-medium">'+(item.name||'—')+'</div>\
-            <div class="mt-1">'+badge+'</div>\
-            <div class="disclosure max-h-0 mt-2" data-body>'+demo+'</div>\
+            <div class="flex items-start gap-2">\
+              <div class="grow">\
+                <div class="text-xs muted mb-1">'+(item.pattern||'')+'</div>\
+                <div class="font-medium">'+(item.name||'—')+'</div>\
+                <div class="mt-1">'+badge+'</div>\
+              </div>\
+              '+img+'\
+            </div>\
+            <div class="disclosure max-h-0 mt-2" data-body>'+(demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+'</div>\
           </article>';
         }).join('');
       }catch(e){ host.innerHTML = '<p class="text-sm text-red-600">Kon Part 2 niet renderen.</p>'; }
@@ -725,25 +949,38 @@
       var host = $('#p3List'); var meta3 = $('#meta3'); if(!host) return;
       try{
         if (s.mode==='breathing' || s.mode==='recovery'){ if(meta3) meta3.textContent=''; host.innerHTML=''; return; }
+
         if (s.finisher && s.finisher.kind === 'ballistic') {
           var fmt = null; for (var i=0;i<FIN_BALLISTIC_FORMATS.length;i++){ if(FIN_BALLISTIC_FORMATS[i].id===s.finisher.format.id){ fmt=FIN_BALLISTIC_FORMATS[i]; break; } }
           if(meta3) meta3.textContent = fmt ? fmt.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-          var url = EX_URLS[s.finisher.exercise];
-          var demo = url ? '<div class="mt-2 text-sm"><a class="underline" href="'+url+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '';
+          var demo = buildDemoHtmlFor(s.finisher.exercise);
+          var thumb = getThumbByName(s.finisher.exercise);
+          var img = thumb ? '<img class="thumb" src="'+thumb+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async">' : '';
           host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
-            <div class="text-xs muted mb-1">Ballistic ('+(s.finisher.group==='A'?'Anterior':'Posterior')+')</div>\
-            <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
-            <div class="disclosure max-h-0 mt-2" data-body>'+demo+'</div>\
+            <div class="flex items-start gap-2">\
+              <div class="grow">\
+                <div class="text-xs muted mb-1">Ballistic ('+(s.finisher.group==='A'?'Anterior':'Posterior')+')</div>\
+                <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
+              </div>\
+              '+img+'\
+            </div>\
+            <div class="disclosure max-h-0 mt-2" data-body>'+(demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+'</div>\
           </article>';
         } else {
           var fmt2 = null; for (var j=0;j<CARRY_FORMATS.length;j++){ if(CARRY_FORMATS[j].id===s.finisher.format.id){ fmt2=CARRY_FORMATS[j]; break; } }
           if(meta3) meta3.textContent = fmt2 ? fmt2.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-          var url2 = EX_URLS[s.finisher.exercise];
-          var demo2 = url2 ? '<div class="mt-2 text-sm"><a class="underline" href="'+url2+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '';
+          var demo2 = buildDemoHtmlFor(s.finisher.exercise);
+          var thumb2 = getThumbByName(s.finisher.exercise);
+          var img2 = thumb2 ? '<img class="thumb" src="'+thumb2+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async">' : '';
           host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
-            <div class="text-xs muted mb-1">Carry (Group C)</div>\
-            <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
-            <div class="disclosure max-h-0 mt-2" data-body>'+demo2+'</div>\
+            <div class="flex items-start gap-2">\
+              <div class="grow">\
+                <div class="text-xs muted mb-1">Carry (Group C)</div>\
+                <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
+              </div>\
+              '+img2+'\
+            </div>\
+            <div class="disclosure max-h-0 mt-2" data-body>'+(demo2 ? '<div class="mt-2 text-sm">'+demo2+'</div>' : '')+'</div>\
           </article>';
         }
       }catch(e){ host.innerHTML = '<p class="text-sm text-red-600">Kon Part 3 niet renderen.</p>'; }
@@ -773,8 +1010,12 @@
       renderPart1(); renderPart2(s); renderPart3(s); renderShortUI();
       var recTabVisible = $('#tab-recovery') && !$('#tab-recovery').classList.contains('hidden');
       if (recTabVisible && s.mode==='recovery') renderRecoveryPreview($('#recPreview'), s);
+
+      // persist current session (pin until complete)
+      saveCurrentSession(s);
     }
 
+    /* ====== History & exports ====== */
     function renderHistory(){
       var hist = lsGet('rise:history', []);
       var host = $('#histList');
@@ -791,8 +1032,8 @@
         return '<div class="py-2 hist-row">\
           <div class="text-sm"><strong>'+new Date(h.saved_at).toLocaleString()+'</strong> • '+(s.mode||'full')+' • Bell L'+(s.bellLevel||bell)+'</div>\
           <div class="text-xs mt-1">'+f2+(f2 && f3 ? ' — ' : '')+f3+'</div>'
-          +(s.part2 ? '<div class="text-xs mt-1">'+s.part2.map(function(it){return it.pattern+': '+it.name;}).join(' • ')+'</div>' : '')
-          +(s.recovery && s.recovery.choice ? '<div class="text-xs mt-1">Recovery: '+s.recovery.choice+'</div>' : '')
+          +(s.part2 ? '<div class="text-xs mt-1">'+s.part2.map(function(it){return it.pattern+': '+it.name;}).join(' • ')+'</div>' : '')+
+          (s.recovery && s.recovery.choice ? '<div class="text-xs mt-1">Recovery: '+s.recovery.choice+'</div>' : '')
           +'</div>';
       }).join('');
       host.innerHTML = rows;
@@ -835,25 +1076,30 @@
       var a = document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
+    /* ====== Hard reset ====== */
     function hardReset(){
       lsSet('rise:history', []);
       setBell(1);
       lsDel('rise_prev_format_v1');
       lsDel('rise:prevFin_A'); lsDel('rise:prevFin_B');
-      lsDel('rise:prevFinisher_fmt_v1');
+      lsDel('rise:prevFinisher_fmt_v1'); // legacy
       lsDel('rise:prev_finisher_fmt_v1');
       lsDel('rise:prevCarry');
+      lsDel('rise:current_session');           // clear pinned
       Object.keys(PATTERNS).forEach(function(p){ lsDel('rise_prev_ex_'+p); });
       lsDel('rise:lastBodyFlow'); lsDel('rise:lastBodyFlowDate');
       Object.keys(KS1).forEach(function(k){ lsDel('rise:ks1:last:'+k); });
       Object.keys(KS2).forEach(function(k){ lsDel('rise:ks2:last:'+k); });
     }
 
+    /* ====== Dialog instances ====== */
     var recDlg = makePolyfill($('#recModal'));
     var recChoiceDlg = makePolyfill($('#recChoice'));
     var progDlg = makePolyfill($('#progModal'));
 
+    /* ====== Events ====== */
     $('#btnGenerate').onclick = function(){
+      // open recovery scale modal
       buildScale('sleep',$('#sSleep'),$('#sSleepDesc'),prefs.recSleep);
       buildScale('energy',$('#sEnergy'),$('#sEnergyDesc'),prefs.recEnergy);
       buildScale('body',$('#sBody'),$('#sBodyDesc'),prefs.recBody);
@@ -872,7 +1118,7 @@
           if(!btn) return;
           recChoiceDlg.close();
           var kind = btn.getAttribute('data-recov');
-          var pinned = (kind==='gfm') ? buildGFMFlow() : (kind==='ks') ? generateKSPlan() : buildZone2();
+          var pinned = buildRecoverySession(kind);
           renderSession(pinned);
           renderRecoveryPreview($('#recPreview'), pinned);
           toast((pinned.recovery && pinned.recovery.choice ? pinned.recovery.choice : 'Recovery') + ' pinned.');
@@ -882,13 +1128,20 @@
         return;
       }
 
-      if (s.mode==='breathing'){ renderSession(s); toast('Breathing pinned.'); return; }
-      renderSession(s); toast('Session generated.');
+      if (s.mode==='breathing'){
+        renderSession(s);
+        toast('Breathing pinned.');
+        return;
+      }
+
+      renderSession(s);
+      toast('Session generated.');
     };
 
     $('#btnComplete').onclick = function(){
       if(!currentSession){ toast('No session to complete.'); return; }
 
+      // Auto progression check — ONLY on Complete
       var shouldAsk = false, q = '';
       if(currentSession.part2 && currentSession.format){
         var hasMP = currentSession.part2.some(function(it){ return it.name==='Military Press'; });
@@ -900,26 +1153,51 @@
       }
 
       function saveAndToast(){
-        var hist = lsGet('rise:history', []); hist.push({ saved_at: nowISO(), session: currentSession });
-        lsSet('rise:history', hist); toast('Session saved to history.');
+        var hist = lsGet('rise:history', []);
+        hist.push({ saved_at: nowISO(), session: currentSession });
+        lsSet('rise:history', hist);
+        clearCurrentSession(); // unpin after saving
+        toast('Session saved to history.');
       }
 
       if(shouldAsk){
-        $('#progQuestion').textContent = q; progDlg.open();
+        $('#progQuestion').textContent = q;
+        progDlg.open();
         $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
         $('#progYes').onclick = function(){ setBell(bell+1); progDlg.close(); toast('Great! Level up.'); saveAndToast(); };
-      } else { saveAndToast(); }
+      } else {
+        saveAndToast();
+      }
     };
 
-    $('#btnRecGFM').onclick = function(){ var s = buildGFMFlow(); renderSession(s); renderRecoveryPreview($('#recPreview'), s); toast('Bodyweight Mobility Flow pinned.'); };
-    $('#btnRecKS').onclick  = function(){ var s = generateKSPlan(); renderSession(s); renderRecoveryPreview($('#recPreview'), s); toast('Kalos Sthenos pinned.'); };
-    $('#btnRecZ2').onclick  = function(){ var s = buildZone2(); renderSession(s); renderRecoveryPreview($('#recPreview'), s); toast('Zone 2 pinned.'); };
+    // Recovery quick actions (buttons in Recovery tab)
+    $('#btnRecGFM').onclick = function(){
+      var s = buildGFMFlow(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
+      toast('Bodyweight Mobility Flow pinned.');
+    };
+    $('#btnRecKS').onclick  = function(){
+      var s = generateKSPlan(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
+      toast('Kalos Sthenos pinned.');
+    };
+    $('#btnRecZ2').onclick  = function(){
+      var s = buildZone2(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
+      toast('Zone 2 pinned.');
+    };
 
-    function updateLevelUpButton(){ var ok = ($('#chkRep').checked && $('#chkWeight').checked); $('#btnProgLevelUp').disabled = !ok; }
+    // Manual progression (Settings)
+    function updateLevelUpButton(){
+      var ok = ($('#chkRep').checked && $('#chkWeight').checked);
+      $('#btnProgLevelUp').disabled = !ok;
+    }
     $('#chkRep').onchange = updateLevelUpButton;
     $('#chkWeight').onchange = updateLevelUpButton;
-    $('#btnProgLevelUp').onclick = function(){ if(this.disabled) return; setBell(bell+1); toast('Level up! Bell increased.'); };
+    $('#btnProgLevelUp').onclick = function(){
+      if(this.disabled) return;
+      setBell(bell+1);
+      toast('Level up! Bell increased.');
+    };
 
+    // Tabs
     $all('.tab-btn').forEach(function(b){
       b.onclick = function(){
         var name=b.getAttribute('data-tab');
@@ -934,6 +1212,7 @@
       };
     });
 
+    // Settings checklists
     function renderFormatsSettings(){
       var map = lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED);
       var host = $('#fmtPart2'); if(!host) return;
@@ -974,12 +1253,14 @@
       };
     }
 
+    // Disclosure (tap to open demo links)
     document.addEventListener('click', function(e){
       var card = e.target.closest && e.target.closest('[data-desc]'); if(!card) return;
       var body = card.querySelector('[data-body]'); if(!body) return;
       body.style.maxHeight = (body.style.maxHeight && body.style.maxHeight!=='0px') ? '0px' : (body.scrollHeight+'px');
     });
 
+    // Recovery scale helpers
     var SCALE = {
       sleep: [ "0 – Barely slept, not recovered","1 – Very poor, broken sleep","2 – Restless, short, not refreshed","3 – Okay, enough to get by","4 – Good, rested","5 – Excellent, fully recovered" ],
       energy:[ "0 – No energy at all","1 – Very low","2 – Low, sluggish","3 – Okay, manageable","4 – Good, energetic","5 – Excellent, buzzing" ],
@@ -1002,15 +1283,17 @@
       if (val!=null) { var btn = into.querySelector('[data-v="'+val+'"]'); if(btn) btn.click(); }
     }
     function updateRecSummary(){
-      var s=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0); // <= numeric
+      var s=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
       var sTotal=$('#sTotal'), sDecision=$('#sDecision');
       if(sTotal) sTotal.textContent = s;
       if(sDecision) sDecision.textContent = s>=11 ? 'Train (full session)' : s>=9 ? 'Short session (5/1/5)' : s>=5 ? 'Recovery' : 'Breathing';
     }
 
+    // Dark toggle
     function setDarkLabel(){ var isDark=document.documentElement.classList.contains('dark'); var b=$('#btnDark'); if(b) b.textContent=isDark?'Light':'Dark'; }
     $('#btnDark').onclick=function(){ document.documentElement.classList.toggle('dark'); prefs.dark=document.documentElement.classList.contains('dark'); savePrefs(); setDarkLabel(); };
 
+    // Boot
     (function boot(){
       if (prefs.dark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
       setDarkLabel();
@@ -1019,8 +1302,13 @@
       var st=$('#sessTitle'); if(st) st.textContent='Session — '+fmtDate(new Date());
       if($('#s_pull')) $('#s_pull').checked = !!prefs.pullupBar;
       if($('#s_adv'))  $('#s_adv').checked  = !!prefs.allowAdvanced;
+
+      // Herstel gepinde sessie (pin until complete)
+      var saved = loadCurrentSession();
+      if (saved) { renderSession(saved); }
     })();
 
+    // Exports + clear
     $('#btnExportJSON').onclick=exportJSON;
     $('#btnExportCSV').onclick=exportCSV;
     $('#btnClearHist').onclick=function(){
