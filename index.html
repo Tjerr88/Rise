@@ -91,6 +91,10 @@
     }
     @media (min-width: 640px){
       .thumb { width: 120px; height: 68px; }
+/* === Accordion media + indicator === */
+.chev { font-weight: 800; line-height: 1; display:inline-block; width:1rem; text-align:center; transition:transform .2s ease; }
+.media { position:relative; width:100%; padding-top:56.25%; border-radius:.75rem; overflow:hidden; }
+.media > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     }
   </style>
 </head>
@@ -907,84 +911,101 @@
       if(!hide) renderPart1Text();
     }
 
-    function renderPart2(s){
-      var host = $('#p2List'); var meta2 = $('#meta2'); if(!host) return;
-      try{
-        if (s.mode==='breathing'){
-          if(meta2) meta2.textContent = '—';
-          host.innerHTML = (s.breathing.main||[]).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
-          return;
-        }
-        if (s.mode==='recovery'){
-          if(meta2) meta2.textContent = s.recovery && s.recovery.choice ? ('Pinned: '+s.recovery.choice) : '—';
-          host.innerHTML = (s.recovery && s.recovery.main || []).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
-          return;
-        }
-        var twoBells = s.format && (s.format.id==='double' || s.format.id==='uneven');
-        var fmtObj = null; for (var i=0;i<FORMATS.length;i++){ if(FORMATS[i].id===s.format.id){ fmtObj=FORMATS[i]; break; } }
-        if(meta2) meta2.textContent = fmtObj ? fmtObj.label : (s.format && s.format.meta ? s.format.meta : '');
-        var list = Array.isArray(s.part2) ? s.part2 : [];
-        host.innerHTML = list.map(function(item){
-          var showTriangle = twoBells && item.singleOnly;
-          var badge = showTriangle ? '<span class="marker text-amber-600"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
-          var demo = buildDemoHtmlFor(item.name);
-          var thumb = getThumbByName(item.name);
-          var img = thumb ? '<img class="thumb" src="'+thumb+'" alt="'+(item.name||'')+' demo" loading="lazy" decoding="async">' : '';
-          return '<article class="p-3 rounded-lg card card-click" data-desc>\
-            <div class="flex items-start gap-2">\
-              <div class="grow">\
-                <div class="text-xs muted mb-1">'+(item.pattern||'')+'</div>\
-                <div class="font-medium">'+(item.name||'—')+'</div>\
-                <div class="mt-1">'+badge+'</div>\
-              </div>\
-              '+img+'\
-            </div>\
-            <div class="disclosure max-h-0 mt-2" data-body>'+(demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+'</div>\
-          </article>';
-        }).join('');
-      }catch(e){ host.innerHTML = '<p class="text-sm text-red-600">Kon Part 2 niet renderen.</p>'; }
+function renderPart2(s){
+  var host = $('#p2List'); var meta2 = $('#meta2'); if(!host) return;
+  try{
+    if (s.mode==='breathing'){
+      if(meta2) meta2.textContent = '—';
+      host.innerHTML = (s.breathing.main||[]).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
+      return;
     }
-
-    function renderPart3(s){
-      var host = $('#p3List'); var meta3 = $('#meta3'); if(!host) return;
-      try{
-        if (s.mode==='breathing' || s.mode==='recovery'){ if(meta3) meta3.textContent=''; host.innerHTML=''; return; }
-
-        if (s.finisher && s.finisher.kind === 'ballistic') {
-          var fmt = null; for (var i=0;i<FIN_BALLISTIC_FORMATS.length;i++){ if(FIN_BALLISTIC_FORMATS[i].id===s.finisher.format.id){ fmt=FIN_BALLISTIC_FORMATS[i]; break; } }
-          if(meta3) meta3.textContent = fmt ? fmt.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-          var demo = buildDemoHtmlFor(s.finisher.exercise);
-          var thumb = getThumbByName(s.finisher.exercise);
-          var img = thumb ? '<img class="thumb" src="'+thumb+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async">' : '';
-          host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
-            <div class="flex items-start gap-2">\
-              <div class="grow">\
-                <div class="text-xs muted mb-1">Ballistic ('+(s.finisher.group==='A'?'Anterior':'Posterior')+')</div>\
-                <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
-              </div>\
-              '+img+'\
-            </div>\
-            <div class="disclosure max-h-0 mt-2" data-body>'+(demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+'</div>\
-          </article>';
-        } else {
-          var fmt2 = null; for (var j=0;j<CARRY_FORMATS.length;j++){ if(CARRY_FORMATS[j].id===s.finisher.format.id){ fmt2=CARRY_FORMATS[j]; break; } }
-          if(meta3) meta3.textContent = fmt2 ? fmt2.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-          var demo2 = buildDemoHtmlFor(s.finisher.exercise);
-          var thumb2 = getThumbByName(s.finisher.exercise);
-          var img2 = thumb2 ? '<img class="thumb" src="'+thumb2+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async">' : '';
-          host.innerHTML = '<article class="p-3 rounded-lg card card-click" data-desc>\
-            <div class="flex items-start gap-2">\
-              <div class="grow">\
-                <div class="text-xs muted mb-1">Carry (Group C)</div>\
-                <div class="font-medium">'+(s.finisher.exercise||'—')+'</div>\
-              </div>\
-              '+img2+'\
-            </div>\
-            <div class="disclosure max-h-0 mt-2" data-body>'+(demo2 ? '<div class="mt-2 text-sm">'+demo2+'</div>' : '')+'</div>\
-          </article>';
-        }
-      }catch(e){ host.innerHTML = '<p class="text-sm text-red-600">Kon Part 3 niet renderen.</p>'; }
+    if (s.mode==='recovery'){
+      if(meta2) meta2.textContent = s.recovery && s.recovery.choice ? ('Pinned: '+s.recovery.choice) : '—';
+      host.innerHTML = (s.recovery && s.recovery.main || []).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
+      return;
     }
+    var twoBells = s.format && (s.format.id==='double' || s.format.id==='uneven');
+    var fmtObj = null; for (var i=0;i<FORMATS.length;i++){ if(FORMATS[i].id===s.format.id){ fmtObj=FORMATS[i]; break; } }
+    if(meta2) meta2.textContent = fmtObj ? fmtObj.label : (s.format && s.format.meta ? s.format.meta : '');
+    var list = Array.isArray(s.part2) ? s.part2 : [];
+
+    host.innerHTML = list.map(function(item){
+      var showTriangle = twoBells && item.singleOnly;
+      var badge = showTriangle ? '<span class="marker text-amber-600"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
+      var demo = buildDemoHtmlFor(item.name);
+      var thumb = getThumbByName(item.name);
+
+      return ''+
+      '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
+        '<div class="flex items-start gap-2">'+
+          '<div class="grow">'+
+            '<div class="text-xs muted mb-1">'+(item.pattern||'')+'</div>'+
+            '<div class="font-medium">'+(item.name||'—')+'</div>'+
+            '<div class="mt-1">'+badge+'</div>'+
+          '</div>'+
+          '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
+        '</div>'+
+        '<div class="disclosure max-h-0 mt-2" data-body>'+
+          (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(item.name||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
+          (demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+
+        '</div>'+
+      '</article>';
+    }).join('');
+  }catch(e){
+    host.innerHTML = '<p class="text-sm text-red-600">Kon Part 2 niet renderen.</p>';
+  }
+}
+function renderPart3(s){
+  var host = $('#p3List'); var meta3 = $('#meta3'); if(!host) return;
+  try{
+    if (s.mode==='breathing' || s.mode==='recovery'){ if(meta3) meta3.textContent=''; host.innerHTML=''; return; }
+
+    if (s.finisher && s.finisher.kind === 'ballistic') {
+      var fmt = null; for (var i=0;i<FIN_BALLISTIC_FORMATS.length;i++){ if(FIN_BALLISTIC_FORMATS[i].id===s.finisher.format.id){ fmt=FIN_BALLISTIC_FORMATS[i]; break; } }
+      if(meta3) meta3.textContent = fmt ? fmt.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
+      var demo = buildDemoHtmlFor(s.finisher.exercise);
+      var thumb = getThumbByName(s.finisher.exercise);
+
+      host.innerHTML =
+        '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
+          '<div class="flex items-start gap-2">'+
+            '<div class="grow">'+
+              '<div class="text-xs muted mb-1">Ballistic ('+(s.finisher.group==='A'?'Anterior':'Posterior')+')</div>'+
+              '<div class="font-medium">'+(s.finisher.exercise||'—')+'</div>'+
+            '</div>'+
+            '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
+          '</div>'+
+          '<div class="disclosure max-h-0 mt-2" data-body>'+
+            (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
+            (demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+
+          '</div>'+
+        '</article>';
+    } else {
+      var fmt2 = null; for (var j=0;j<CARRY_FORMATS.length;j++){ if(CARRY_FORMATS[j].id===s.finisher.format.id){ fmt2=CARRY_FORMATS[j]; break; } }
+      if(meta3) meta3.textContent = fmt2 ? fmt2.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
+      var demo2 = buildDemoHtmlFor(s.finisher.exercise);
+      var thumb2 = getThumbByName(s.finisher.exercise);
+
+      host.innerHTML =
+        '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
+          '<div class="flex items-start gap-2">'+
+            '<div class="grow">'+
+              '<div class="text-xs muted mb-1">Carry (Group C)</div>'+
+              '<div class="font-medium">'+(s.finisher.exercise||'—')+'</div>'+
+            '</div>'+
+            '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
+          '</div>'+
+          '<div class="disclosure max-h-0 mt-2" data-body>'+
+            (thumb2 ? '<div class="media"><img src="'+thumb2+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
+            (demo2 ? '<div class="mt-2 text-sm">'+demo2+'</div>' : '')+
+          '</div>'+
+        '</article>';
+    }
+  }catch(e){
+    host.innerHTML = '<p class="text-sm text-red-600">Kon Part 3 niet renderen.</p>';
+  }
+}
+
 
     function renderShortUI(){
       var banner = $('#shortBanner');
@@ -1254,12 +1275,32 @@
     }
 
     // Disclosure (tap to open demo links)
-    document.addEventListener('click', function(e){
-      var card = e.target.closest && e.target.closest('[data-desc]'); if(!card) return;
-      var body = card.querySelector('[data-body]'); if(!body) return;
-      body.style.maxHeight = (body.style.maxHeight && body.style.maxHeight!=='0px') ? '0px' : (body.scrollHeight+'px');
-    });
+document.addEventListener('click', function(e){
+  var card = e.target.closest && e.target.closest('[data-desc]'); if(!card) return;
+  var body = card.querySelector('[data-body]'); if(!body) return;
 
+  var willOpen = !(card.getAttribute('data-open') === 'true');
+  card.setAttribute('data-open', willOpen ? 'true' : 'false');
+  card.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+  // plus ↔ minus
+  var chev = card.querySelector('.chev');
+  if (chev) chev.textContent = willOpen ? '–' : '+';
+
+  if (willOpen) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    // als de afbeelding nog laadt → na load hoogte opnieuw instellen
+    var img = body.querySelector('img');
+    if (img && !img.complete) {
+      img.addEventListener('load', function onL(){
+        body.style.maxHeight = body.scrollHeight + 'px';
+        img.removeEventListener('load', onL);
+      });
+    }
+  } else {
+    body.style.maxHeight = '0px';
+  }
+});
     // Recovery scale helpers
     var SCALE = {
       sleep: [ "0 – Barely slept, not recovered","1 – Very poor, broken sleep","2 – Restless, short, not refreshed","3 – Okay, enough to get by","4 – Good, rested","5 – Excellent, fully recovered" ],
