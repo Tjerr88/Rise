@@ -801,20 +801,41 @@ function pickFinisher(){
   return { kind:'ballistic', group:group, exercise:exercise, format: bf };
 }
 
-    function decideMode(){
-      var total=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
-      if(total>=11) return 'full';
-      if(total>=9) return 'short';
-      return 'recovery';
-    }
-    function generateSession(){
-      var mode=decideMode();
-      var fmt = prefs.autoFormats ? pickFormatAuto() : FORMATS[0];
-      var part2 = buildPart2();
-      var finisher = pickFinisher(); // ABC rotatie blijft lopen; short slaat part3 alleen over in UI
-      return { id: uuid(), program:'Rise', createdAt: nowISO(), mode:mode, format: fmt, part2: part2, finisher: finisher, bellLevel: bell };
-    }
+function decideMode(){
+  var total=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
 
+  if(total >= 11) return 'full';      // Part 1+2+3
+  if(total >= 9)  return 'short';     // Part 1+2
+  if(total >= 7)  return 'ks';        // Alleen Kalos Sthenos (Part 1)
+  return 'recovery';                  // Ademhaling / mobility / reset
+}
+
+function generateSession(){
+  var mode = decideMode();
+
+  // KS-mode: gebruik de bestaande KS-generator en label de mode als 'ks'
+  if (mode === 'ks') {
+    var s = generateKSPlan(); // levert een recovery-achtig object
+    s.mode = 'ks';            // belangrijk voor UI (banner/parts)
+    return s;
+  }
+
+  // Standaard Rise-logica
+  var fmt = prefs.autoFormats ? pickFormatAuto() : FORMATS[0];
+  var part2 = buildPart2();
+  var finisher = pickFinisher();
+
+  return {
+    id: uuid(),
+    program: 'Rise',
+    createdAt: nowISO(),
+    mode: mode,
+    format: fmt,
+    part2: part2,
+    finisher: finisher,
+    bellLevel: bell
+  };
+}
     /* ===== Render ===== */
     var currentSession=null;
     function buildDemoHtmlFor(name){
@@ -856,72 +877,104 @@ function pickFinisher(){
       // Part1 demo
       var url=EX_URLS['Get-ups']; var th=url? ytThumbFromUrl(url,'hqdefault'):null;
       if(th) $('#p1Img').src=th; if(url) $('#p1Demo').href=url;
+// Als KS-mode: Part 1 ombouwen naar Kalos Sthenos lijst
+if (s.mode === 'ks') {
+  // Titel & subtitel aanpassen
+  var p1h3 = $('#part1 h3');
+  if (p1h3) p1h3.textContent = 'Part 1 — Kalos Sthenos (~10 min)';
+  var p1sub = p1h3 && p1h3.parentNode ? p1h3.parentNode.querySelector('p.text-xs.muted') : null;
+  if (p1sub) p1sub.textContent = 'Perform 1 drill per step (1× 5–10 reps), move smooth.';
+
+  // De bestaande kaart vervangen door een simpele lijst uit s.recovery.main
+  var card = $('#part1 [data-desc]');
+  if (card) {
+    var lines = (s.recovery && s.recovery.main) ? s.recovery.main : [];
+    var html = '<div class="text-sm space-y-1">' +
+      lines.map(function(l){ return '<p>'+(l?l:'&nbsp;')+'</p>'; }).join('') +
+      '</div>';
+    card.innerHTML = html;
+
+    // Optioneel: klik-accordiongedrag uitschakelen zodat het niet toggle’t
+    card.classList.remove('card-click');
+    card.removeAttribute('data-desc');
+  }
+}
 
       // Mode banner
       var banner=$('#modeBanner'); banner.classList.add('hidden'); banner.textContent='';
       if(s.mode==='recovery'){ banner.textContent='Recovery: Part 1 only today (quality Get-ups).'; banner.classList.remove('hidden'); }
       else if(s.mode==='short'){ banner.textContent='Short Session: Part 1 + Part 2 (no finisher).'; banner.classList.remove('hidden'); }
-
+else if(s.mode==='ks'){
+  banner.textContent='Kalos Sthenos Session: Part 1 (structured mobility).';
+  banner.classList.remove('hidden');
+}
       // Part visibility
-      $('#part1').style.display='';
-      $('#part2').style.display = (s.mode==='recovery') ? 'none' : '';
-      $('#part3').style.display = (s.mode==='recovery') ? 'none' : '';
+// Part visibility
+$('#part1').style.display = '';
+var onlyPart1 = (s.mode === 'recovery' || s.mode === 'ks');
+$('#part2').style.display = onlyPart1 ? 'none' : '';
+$('#part3').style.display = onlyPart1 ? 'none' : '';
+
 
       // Part 2
-      if(s.mode!=='recovery'){
-        $('#meta2').textContent = s.format ? ('Format: ' + (s.format.label || '—')) : '—';
-        $('#p2Timer').textContent = (s.format && s.format.id==='timed') ? '▶ Start Timed' : '▶ 25-min timer';
-        $('#p2List').innerHTML = (s.part2||[]).map(function(it){
-          var badge = (s.format && (s.format.id==='double' || s.format.id==='uneven') && it.singleOnly)
-            ? '<span class="marker text-amber-500"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
-          var demoURL=EX_URLS[it.name]; var thumb=demoURL? ytThumbFromUrl(demoURL,'hqdefault'):null;
-          return ''+
-          '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
-            '<div class="flex items-start gap-2">'+
-              '<div class="grow">'+
-                '<div class="text-xs muted mb-1">'+(it.pattern||'')+'</div>'+
-                '<div class="font-medium">'+(it.name||'—')+'</div>'+
-                '<div class="mt-1">'+badge+'</div>'+
-              '</div>'+
-              '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
-            '</div>'+
-            '<div class="disclosure max-h-0 mt-2" data-body>'+
-              (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(it.name||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
-              (demoURL ? '<div class="mt-2 text-sm"><a class="underline" href="'+demoURL+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '')+
-            '</div>'+
-          '</article>';
-        }).join('');
-      } else {
-      }
-
-     // Part 3
+if (s.mode!=='recovery' && s.mode!=='ks') {
+  $('#meta2').textContent = s.format ? ('Format: ' + (s.format.label || '—')) : '—';
+  $('#p2Timer').textContent = (s.format && s.format.id==='timed') ? '▶ Start Timed' : '▶ 25-min timer';
+  $('#p2List').innerHTML = (s.part2||[]).map(function(it){
+    var badge = (s.format && (s.format.id==='double' || s.format.id==='uneven') && it.singleOnly)
+      ? '<span class="marker text-amber-500"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
+    var demoURL=EX_URLS[it.name]; 
+    var thumb=demoURL? ytThumbFromUrl(demoURL,'hqdefault'):null;
+    return ''+
+    '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
+      '<div class="flex items-start gap-2">'+
+        '<div class="grow">'+
+          '<div class="text-xs muted mb-1">'+(it.pattern||'')+'</div>'+
+          '<div class="font-medium">'+(it.name||'—')+'</div>'+
+          '<div class="mt-1">'+badge+'</div>'+
+        '</div>'+
+        (thumb? '<a href="'+demoURL+'" target="_blank"><img class="thumb" src="'+thumb+'"></a>' : '')+
+      '</div>'+
+    '</article>';
+  }).join('');
+} else {
+  // niks tonen bij recovery of ks
+}
+// Part 3
 var meta3 = $('#meta3'), host3 = $('#p3List');
 
 if (s.mode === 'full') {
+  // Finisher renderen (ongewijzigd)
   if (s.finisher && s.finisher.kind === 'ballistic') {
-    var f = FIN_BALLISTIC_FORMATS.find(function(x){ 
-      return x.id === (s.finisher.format && s.finisher.format.id); 
+    var f = FIN_BALLISTIC_FORMATS.find(function(x){
+      return x.id === (s.finisher.format && s.finisher.format.id);
     });
     var fmt3Label = f ? FIN_BALLISTIC_TEXT[f.id] : '—';
     meta3.textContent = (s.finisher.group==='A' ? 'Ballistic (Anterior) — ' : 'Ballistic (Posterior) — ')
       + fmt3Label.replace(/^Format:\s*/,'Format: ');
     host3.innerHTML = buildDemoHtmlFor(s.finisher.exercise);
   } else {
-    var fc = CARRY_FORMATS.find(function(x){ 
-      return x.id === (s.finisher.format && s.finisher.format.id); 
+    var fc = CARRY_FORMATS.find(function(x){
+      return x.id === (s.finisher.format && s.finisher.format.id);
     });
     var fmt3Carry = fc ? CARRY_TEXT[fc.id] : '—';
     meta3.textContent = 'Carry (Group C) — ' + fmt3Carry.replace(/^Format:\s*/,'Format: ');
     host3.innerHTML = buildDemoHtmlFor(s.finisher.exercise);
   }
+
 } else if (s.mode === 'short') {
   meta3.textContent = 'Because Recovery Score, no finisher today';
   host3.innerHTML = '';
+
+} else if (s.mode === 'ks') {
+  // KS-dag: geen finisher
+  meta3.textContent = 'Kalos Sthenos day — no finisher';
+  host3.innerHTML = '';
+
 } else { // recovery
   meta3.textContent = '';
   host3.innerHTML = '';
 }
-
       reflectForceTestUI();
 
       // Recovery tab preview if open
@@ -987,7 +1040,7 @@ if (s.mode === 'full') {
     };
 
     $('#p2Timer').onclick = async function(){
-      if(!currentSession || currentSession.mode==='recovery') return;
+      if(!currentSession || currentSession.mode==='recovery' || currentSession.mode==='ks') return;
       stopAll(); await requestWakeLock();
       var isTimed = currentSession.format && currentSession.format.id==='timed';
       if(!isTimed){
@@ -1374,11 +1427,16 @@ $('#p3Timer').onclick = async function(){
       };
       if (val!=null){ var pre = into.querySelector('[data-v="'+val+'"]'); if (pre){ pre.click(); } }
     }
-    function updateRecSummary(){
-      var s=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
-      $('#sTotal').textContent=s;
-      $('#sDecision').textContent = s>=11 ? 'Train (full session)' : s>=9 ? 'Short session (Part 1+2)' : 'Recovery (Part 1 only)';
-    }
+function updateRecSummary(){
+  var s=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
+  var label = '—';
+  if (s >= 11)      label = 'Train (full session)';
+  else if (s >= 9)  label = 'Short session (Part 1+2)';
+  else if (s >= 7)  label = 'Kalos Sthenos (Part 1 only)';
+  else              label = 'Recovery (Part 1 only)';
+  $('#sTotal').textContent = s;
+  $('#sDecision').textContent = label;
+}
     var recDlg=(function(){ var el=$('#recModal'); return { open:function(){ if(el && el.showModal) el.showModal(); }, close:function(){ if(el && el.close) el.close(); } }; })();
     $('#btnGenerate').onclick = function(){
       buildScale('sleep',$('#sSleep'),$('#sSleepDesc'),prefs.recSleep);
