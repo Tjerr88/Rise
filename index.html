@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Rise</title>
@@ -7,51 +7,64 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' };</script>
   <style>
-    :root { color-scheme: light dark; }
-    body { -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
-
-    /* Theme tokens */
     :root{
-      --fg:#0f172a;
-      --fg-muted:#475569;
-      --bg:#f1f5f9;
-      --ok:#059669;
+      color-scheme: light dark;
+      --fg:#0f172a; --fg-muted:#475569; --bg:#f1f5f9; --ok:#059669;
     }
-    html.dark{
-      --fg:#e5e7eb;
-      --fg-muted:#cbd5e1;
-      --bg:#0f172a;
-    }
-    body{ color:var(--fg); background:var(--bg); }
+    html.dark{ --fg:#e5e7eb; --fg-muted:#cbd5e1; --bg:#0f172a; }
+    body{ color:var(--fg); background:var(--bg); -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent; }
     .muted{ color:var(--fg-muted); }
 
-    .btn { border-radius:.9rem; padding:.7rem 1rem; }
-    .btn-sm { border-radius:.7rem; padding:.5rem .75rem; font-size:.9rem; }
+    .btn { border-radius:.9rem; padding:.6rem .9rem; }
+    .btn-sm { border-radius:.7rem; padding:.45rem .7rem; font-size:.9rem; }
     .btn-ok { background:var(--ok); color:#fff; }
     .card { background:#fff; border:1px solid rgba(0,0,0,.08); }
     html.dark .card { background:#0f172a; border-color: rgba(255,255,255,.12); }
     .tab-btn { padding:.5rem .8rem; border-radius:.6rem; }
     .tab-btn.active { background:#2563eb; color:#fff; }
     html.dark .tab-btn:not(.active){ color:#e5e7eb; }
-
-    .disclosure { transition:max-height .25s ease; overflow:hidden; }
-    .card-click { cursor:pointer; }
-    .triangle { width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:12px solid currentColor; }
-    .marker { display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; }
-    .toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); padding:.6rem .9rem; border-radius:.7rem; background:#111827; color:#fff; font-size:.9rem; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,.25); }
     .badge { border:1px solid rgba(0,0,0,.12); padding:.15rem .45rem; border-radius:.5rem; font-size:.72rem; }
     html.dark .badge { border-color: rgba(255,255,255,.18); }
 
-    dialog, .recovery-modal { color:var(--fg); }
+    .switch { position:relative; width:44px; height:24px; display:inline-block; }
+    .switch input { display:none; }
+    .slider { position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:999px; transition:.2s; }
+    .slider:before { content:""; position:absolute; height:20px; width:20px; left:2px; top:2px; background:white; border-radius:50%; transition:.2s; }
+    input:checked + .slider { background:#2563eb; }
+    input:checked + .slider:before { transform:translateX(20px); }
+    html.dark .slider { background:#475569; }
 
-    .recovery-modal .label, .recovery-modal .hint, .recovery-modal .value { color:var(--fg); }
-    .recovery-modal .scale-btn {
-      color:#0f172a; background:#e5e7eb; border:1px solid rgba(0,0,0,.15); border-radius:.5rem; padding:.45rem .7rem; font-size:.9rem;
+    .triangle { width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:12px solid currentColor; }
+    .marker { display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; }
+
+    .toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); padding:.6rem .9rem; border-radius:.7rem; background:#111827; color:#fff; font-size:.9rem; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+
+    .chev { font-weight:800; line-height:1; display:inline-block; width:1rem; text-align:center; transition:transform .2s ease; }
+    .disclosure { transition:max-height .25s ease; overflow:hidden; }
+    .media { position:relative; width:100%; padding-top:56.25%; border-radius:.75rem; overflow:hidden; }
+    .media > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+
+    .hud { position:fixed; right:12px; bottom:12px; z-index:50; background:rgba(2,6,23,.9); color:#fff; padding:.6rem .8rem; border-radius:.75rem; font:600 14px/1.1 system-ui; min-width:240px; }
+
+    /* Recovery score buttons (contrast) */
+    .scale-btn{
+      color:var(--fg);
+      background:#e5e7eb;
+      border:1px solid rgba(0,0,0,.15);
+      border-radius:.5rem;
+      padding:.45rem .7rem;
+      font-size:.9rem;
     }
-    html.dark .recovery-modal .scale-btn {
-      color:#e5e7eb; background:#1f2937; border-color:rgba(255,255,255,.18);
+    html.dark .scale-btn{
+      color:var(--fg);
+      background:#1f2937;
+      border-color:rgba(255,255,255,.18);
     }
-    .recovery-modal .scale-btn.active { background:#2563eb !important; color:#fff !important; }
+    .scale-btn.active{
+      background:#2563eb !important;
+      color:#fff !important;
+      border-color:#2563eb !important;
+    }
 
     .mode-short-banner {
       background: linear-gradient(180deg,#f59e0b1a,#f59e0b0f);
@@ -63,40 +76,79 @@
       border-color: rgba(245,158,11,.55);
       color:#fde68a;
     }
+  
+/* ==== Gate / Recovery Check (Generate) — readability patch ==== */
+#recModal {
+  color: var(--fg);
+  background: #ffffff;
+}
+html.dark #recModal {
+  background: #0f172a;
+}
 
-    .set-list label { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.45rem .6rem; border-radius:.6rem; }
-    .set-list label:hover { background:rgba(0,0,0,.04); }
-    html.dark .set-list label:hover { background:rgba(255,255,255,.06); }
+/* Header + subtitel beter leesbaar */
+#recModal h3 { 
+  font-size: 1.05rem; 
+  font-weight: 700; 
+  color: var(--fg);
+}
+#recModal .muted {
+  color: var(--fg);      /* niet grijs maken in deze modal */
+  opacity: .85;
+}
 
-    .hist-row { border-bottom:1px solid rgba(0,0,0,.08); }
-    html.dark .hist-row { border-color:rgba(255,255,255,.12); }
+/* Labels en beschrijvingen */
+#recModal .font-medium { 
+  color: var(--fg); 
+  font-weight: 600;
+}
+#recModal .opacity-80,
+#recModal [id$="Desc"] {
+  color: var(--fg);
+  opacity: .95;          /* duidelijker */
+  font-size: .92rem;
+  line-height: 1.5;
+  margin-top: .25rem;
+}
 
-    .switch { position:relative; width:44px; height:24px; display:inline-block; }
-    .switch input { display:none; }
-    .slider { position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:999px; transition:.2s; }
-    .slider:before { content:""; position:absolute; height:20px; width:20px; left:2px; top:2px; background:white; border-radius:50%; transition:.2s; }
-    input:checked + .slider { background:#2563eb; }
-    input:checked + .slider:before { transform:translateX(20px); }
-    html.dark .slider { background:#475569; }
+/* Scoreknoppen (0–5) groter + duidelijker */
+#recModal .scale-btn{
+  font-size: 1rem;
+  padding: .55rem .8rem;
+  border-radius: .6rem;
+  border-width: 1px;
+  transition: transform .06s ease;
+}
+#recModal .scale-btn:active { transform: scale(.98); }
 
-    .dlg-polyfill { display:none; position:fixed; inset:0; z-index:50; color:var(--fg); }
-    .dlg-polyfill .dlg-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
-    .dlg-polyfill .dlg-panel { position:relative; margin:8vh auto; width:min(92vw,520px); border-radius:0.75rem; overflow:hidden; }
-    .dlg-polyfill.open { display:block; }
+/* Contrast states  */
+#recModal .scale-btn.active{
+  background:#2563eb !important;
+  color:#fff !important;
+  border-color:#2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37,99,235,.25);
+}
+html.dark #recModal .scale-btn{
+  background:#1f2937;
+  color: var(--fg);
+  border-color: rgba(255,255,255,.18);
+}
 
-    /* Kleine oefening-thumbnails in de kaarten */
-    .thumb {
-      width: 84px; height: 48px; border-radius: .5rem;
-      object-fit: cover; flex: 0 0 auto;
-    }
-    @media (min-width: 640px){
-      .thumb { width: 120px; height: 68px; }
-/* === Accordion media + indicator === */
-.chev { font-weight: 800; line-height: 1; display:inline-block; width:1rem; text-align:center; transition:transform .2s ease; }
-.media { position:relative; width:100%; padding-top:56.25%; border-radius:.75rem; overflow:hidden; }
-.media > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-    }
-  </style>
+/* Total / Decision regel extra duidelijk */
+#recModal #sTotal, 
+#recModal #sDecision{
+  font-weight:700;
+}
+
+/* Modal knoppen onderin – duidelijke contrast */
+#recModal .btn { 
+  font-weight: 600; 
+}
+#recModal .btn.bg-slate-600,
+#recModal .btn.bg-blue-600{
+  filter: saturate(1.1);
+}
+</style>
 </head>
 <body class="min-h-screen">
   <div class="max-w-3xl mx-auto px-4 py-4">
@@ -106,7 +158,7 @@
         <h1 class="text-xl font-bold">Rise</h1>
         <p class="text-xs muted -mt-0.5">Build strength through movement, mastery through variety</p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <span id="bellBadge" class="badge text-xs">Bell L1</span>
         <button id="btnDark" class="text-xs underline">Dark</button>
       </div>
@@ -123,7 +175,7 @@
     <!-- TRAIN -->
     <div id="tab-train" class="mt-3">
       <section class="card rounded-xl">
-        <header class="px-4 py-3 border-b border-black/10 dark:border-white/10 flex justify-between">
+        <header class="px-4 py-3 border-b border-black/10 dark:border-white/10 flex justify-between items-center">
           <h2 id="sessTitle" class="font-semibold">Session —</h2>
           <div class="flex gap-2">
             <button id="btnGenerate" class="btn bg-blue-600 text-white">Generate</button>
@@ -131,26 +183,77 @@
           </div>
         </header>
         <div class="p-4">
-          <div id="shortBanner" class="hidden"></div>
+          <!-- 28-day Force Test -->
+          <div id="forceTest" class="hidden rounded-lg p-3 border border-amber-500/40 bg-amber-50 dark:bg-amber-900/20 text-sm mb-3">
+            <div id="forceMsg" class="mb-2 font-medium">It’s been 28 days since your last test.</div>
+            <div class="flex gap-2">
+              <button id="btnTestBefore" class="btn-sm bg-slate-700 text-white">Before Circuit</button>
+              <button id="btnTestIn" class="btn-sm bg-slate-700 text-white">In Circuit</button>
+            </div>
+          </div>
+
+          <!-- Mode banner -->
+          <div id="modeBanner" class="hidden rounded-xl p-3 mb-3 border border-amber-500/40 bg-amber-50 dark:bg-amber-900/20 text-sm"></div>
+
+          <!-- PART 1 -->
           <section id="part1" class="card rounded-xl p-3">
-            <h3 class="font-semibold">Part 1 — Get-ups (10 min)</h3>
-            <div id="p1Text" class="mt-2 text-sm"></div>
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h3 class="font-semibold">Part 1 — 10 min Quality Reps</h3>
+<p class="text-xs muted -mt-0.5">Turkish Get-up — use the same bell as Part 2</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="badge">Technique</span>
+                <button id="p1Timer" class="btn-sm bg-slate-900 text-white">▶ 10-min timer</button>
+              </div>
+            </div>
+            <article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">
+              <div class="flex items-start gap-2">
+                <div class="grow">
+                  <div class="text-xs muted mb-1">Get-up</div>
+                  <div class="font-medium">Turkish Get-up</div>
+                </div>
+                <button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>
+              </div>
+              <div class="disclosure max-h-0 mt-2" data-body>
+                <div class="media"><img id="p1Img" alt="Get-up demo" loading="lazy" decoding="async"></div>
+                <div class="mt-2 text-sm"><a id="p1Demo" class="underline" target="_blank" rel="noopener">Bekijk demo ↗</a></div>
+              </div>
+            </article>
           </section>
+
+          <!-- PART 2 -->
           <section id="part2" class="card rounded-xl p-3 mt-3">
-            <h3 class="font-semibold">Part 2 — Circuit (25 min)</h3>
-            <div id="meta2" class="text-xs muted mt-1"></div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-semibold">Part 2 — 25 min Circuit</h3>
+                <p id="meta2" class="text-xs muted -mt-0.5"></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="p2Timer" class="btn-sm bg-slate-900 text-white">▶ 25-min timer</button>
+              </div>
+            </div>
             <div id="p2List" class="mt-2 grid sm:grid-cols-2 gap-2"></div>
           </section>
+
+          <!-- PART 3 -->
           <section id="part3" class="card rounded-xl p-3 mt-3">
-            <h3 class="font-semibold">Part 3 — Finisher (10 min)</h3>
-            <div id="meta3" class="text-xs muted mt-1"></div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-semibold">Part 3 — 10 min Finisher</h3>
+                <p id="meta3" class="text-xs muted -mt-0.5"></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="p3Timer" class="btn-sm bg-slate-900 text-white">▶ 10-min timer</button>
+              </div>
+            </div>
             <div id="p3List" class="mt-2 grid sm:grid-cols-2 gap-2"></div>
           </section>
         </div>
       </section>
     </div>
 
-    <!-- RECOVERY -->
+    <!-- RECOVERY TAB -->
     <div id="tab-recovery" class="hidden mt-3">
       <section class="card rounded-xl p-4 space-y-3">
         <h3 class="font-semibold">Recovery / Rest Day</h3>
@@ -187,34 +290,35 @@
       <section class="card rounded-xl p-4 space-y-4">
         <div class="flex justify-between">
           <span>Pull-up bar available</span>
-          <input id="s_pull" type="checkbox">
+          <span class="switch"><input id="s_pull" type="checkbox"><span class="slider"></span></span>
         </div>
         <div class="flex justify-between">
           <span>Allow advanced exercises</span>
-          <input id="s_adv" type="checkbox">
+          <span class="switch"><input id="s_adv" type="checkbox"><span class="slider"></span></span>
         </div>
 
         <div class="border-t border-black/10 dark:border-white/10 pt-3">
-          <h4 class="font-semibold mb-2">Part 2 Formats</h4>
-          <div id="fmtPart2" class="set-list space-y-1"></div>
+          <h4 class="font-semibold mb-2">Formats (auto)</h4>
+          <div class="flex justify-between">
+            <span>Let Rise auto-pick formats</span>
+            <span class="switch"><input id="s_autoFmt" type="checkbox"><span class="slider"></span></span>
+          </div>
+          <p class="text-xs muted mt-1">When ON, Rise rotates formats (incl. Timed) + still forces a pillar test every 28 days if overdue.</p>
         </div>
 
         <div class="border-t border-black/10 dark:border-white/10 pt-3">
-          <h4 class="font-semibold mb-2">Finisher Formats — A/B (Ballistic)</h4>
-          <div id="fmtFinAB" class="set-list space-y-1"></div>
-        </div>
-
-        <div class="border-t border-black/10 dark:border-white/10 pt-3">
-          <h4 class="font-semibold mb-2">Finisher Formats — C (Carry)</h4>
-          <div id="fmtFinC" class="set-list space-y-1"></div>
+          <h4 class="font-semibold mb-2">Progress Tests</h4>
+          <div class="flex justify-between">
+            <span>Force a pillar test every 28 days</span>
+            <span class="switch"><input id="s_force28" type="checkbox"><span class="slider"></span></span>
+          </div>
+          <p class="text-xs muted mt-1">When overdue, a test (WL or RL) will be prompted even if formats are manual.</p>
         </div>
 
         <!-- Manual Progression -->
         <div class="border-t border-black/10 dark:border-white/10 pt-3">
           <h4 class="font-semibold mb-2">Manual Progression Check</h4>
-          <p class="text-sm muted mb-2">
-            Test both pillars (<strong>both arms</strong>). You need both for Level Up.
-          </p>
+          <p class="text-sm muted mb-2">You need <strong>both</strong> pillars (per arm) before Goldilocks can go up.</p>
           <div class="space-y-3">
             <label class="flex items-center justify-between gap-4 p-2 rounded-md">
               <div>
@@ -226,7 +330,7 @@
             <label class="flex items-center justify-between gap-4 p-2 rounded-md">
               <div>
                 <div class="font-medium">Military Press — Weight Ladder (5 @ Heavy, <em>both arms</em>)</div>
-                <div class="text-xs muted">5 crisp reps per arm at your heavy bell.</div>
+                <div class="text-xs muted">Protocol: (G−4)×5 → G×3 → (G+4)×2+. Pillar pass = 5/arm @ Heavy.</div>
               </div>
               <span class="switch"><input id="chkWeight" type="checkbox"><span class="slider"></span></span>
             </label>
@@ -240,50 +344,37 @@
     </div>
   </div>
 
-  <!-- Recovery Modal -->
-  <dialog id="recModal" class="recovery-modal rounded-xl p-0 w-[460px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
+  <!-- Recovery Modal (score gating) -->
+  <dialog id="recModal" class="rounded-xl p-0 w-[480px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
     <div class="p-4 border-b border-black/10 dark:border-white/10">
-      <h3 class="font-semibold label">Daily Recovery Check</h3>
-      <p class="text-xs hint opacity-80">Your score sets today’s plan.</p>
+      <h3 class="font-semibold">Daily Recovery Check</h3>
+      <p class="text-xs muted">Your score sets today’s plan.</p>
     </div>
     <div class="p-4 space-y-3">
       <div>
-        <div class="label font-medium mb-1">Sleep Quality</div>
+        <div class="font-medium mb-1">Sleep Quality</div>
         <div class="flex flex-wrap gap-2" id="sSleep"></div>
-        <div class="value text-xs mt-1 opacity-80" id="sSleepDesc"></div>
+        <div class="text-xs opacity-80" id="sSleepDesc"></div>
       </div>
       <div>
-        <div class="label font-medium mb-1">Energy</div>
+        <div class="font-medium mb-1">Energy</div>
         <div class="flex flex-wrap gap-2" id="sEnergy"></div>
-        <div class="value text-xs mt-1 opacity-80" id="sEnergyDesc"></div>
+        <div class="text-xs opacity-80" id="sEnergyDesc"></div>
       </div>
       <div>
-        <div class="label font-medium mb-1">Body Readiness</div>
+        <div class="font-medium mb-1">Body Readiness</div>
         <div class="flex flex-wrap gap-2" id="sBody"></div>
-        <div class="value text-xs mt-1 opacity-80" id="sBodyDesc"></div>
+        <div class="text-xs opacity-80" id="sBodyDesc"></div>
       </div>
       <div class="text-sm">Total: <span id="sTotal">0</span> → <strong id="sDecision">—</strong></div>
     </div>
     <div class="p-4 border-t border-black/10 dark:border-white/10 flex gap-2">
       <button id="recCancel" class="btn bg-slate-600 text-white w-1/2">Cancel</button>
-      <button id="recConfirm" class="btn bg-blue-600 w-1/2 text-white">Continue</button>
+      <button id="recConfirm" class="btn bg-blue-600 text-white w-1/2">Continue</button>
     </div>
   </dialog>
 
-  <!-- Recovery Choice Modal -->
-  <dialog id="recChoice" class="rounded-xl p-0 w-[420px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
-    <div class="p-4 border-b border-black/10 dark:border-white/10">
-      <h3 class="font-semibold">Choose Recovery</h3>
-      <p class="text-xs muted mt-1">Pin one for today.</p>
-    </div>
-    <div class="p-4 flex flex-col gap-2">
-      <button class="btn bg-slate-700 text-white" data-recov="gfm">Bodyweight Mobility Flow</button>
-      <button class="btn bg-slate-700 text-white" data-recov="zone2">Zone 2</button>
-      <button class="btn bg-slate-700 text-white" data-recov="ks">Kalos Sthenos</button>
-    </div>
-  </dialog>
-
-  <!-- Progression Modal (auto — only on Complete) -->
+  <!-- Progression Modal (auto — Complete) -->
   <dialog id="progModal" class="rounded-xl p-0 w-[420px] max-w-[92vw] bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10">
     <div class="p-4 border-b border-black/10 dark:border-white/10">
       <h3 class="font-semibold">Progression Check</h3>
@@ -295,12 +386,15 @@
     </div>
   </dialog>
 
+  <!-- HUD -->
+  <div id="hud" class="hud hidden"><span id="hudLabel">—</span> <span id="hudTime" class="opacity-80"></span></div>
+
   <script>
   (function(){
-    /* ====== Utils ====== */
-    function $(q,root){ return (root||document).querySelector(q); }
-    function $all(q,root){ return Array.prototype.slice.call((root||document).querySelectorAll(q)); }
-    function lsGet(k, fallback){ try{ var v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+    /* ===== Utils ===== */
+    function $(q,r){ return (r||document).querySelector(q); }
+    function $all(q,r){ return Array.prototype.slice.call((r||document).querySelectorAll(q)); }
+    function lsGet(k,f){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }
     function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
     function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
     function uuid(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){ var r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8); return v.toString(16); }); }
@@ -308,43 +402,75 @@
     function fmtDate(d){ var dd=('0'+d.getDate()).slice(-2), mm=('0'+(d.getMonth()+1)).slice(-2), yy=d.getFullYear(); var hh=('0'+d.getHours()).slice(-2), mi=('0'+d.getMinutes()).slice(-2); return dd+'-'+mm+'-'+yy+' '+hh+':'+mi; }
     function toast(msg){ var t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); },2400); }
 
-    var supportsDialog = typeof window.HTMLDialogElement === 'function';
-    function makePolyfill(dlg){
-      if (supportsDialog) return { open:function(){ dlg.showModal(); }, close:function(){ dlg.close(); } };
-      var wrap = document.createElement('div'); wrap.className='dlg-polyfill';
-      var backdrop = document.createElement('div'); backdrop.className='dlg-backdrop';
-      var panel = document.createElement('div'); panel.className='dlg-panel card';
-      while(dlg.firstChild){ panel.appendChild(dlg.firstChild); }
-      wrap.appendChild(backdrop); wrap.appendChild(panel);
-      dlg.parentNode.insertBefore(wrap, dlg);
-      dlg.remove();
-      return { open:function(){ wrap.classList.add('open'); }, close:function(){ wrap.classList.remove('open'); } };
-    }
-
-    /* ====== State ====== */
-    var prefs = lsGet('rise:prefs', { pullupBar:true, allowAdvanced:true, dark:true, recSleep:null, recEnergy:null, recBody:null });
+    /* ===== Theme ===== */
+    var prefs = lsGet('rise:prefs', { pullupBar:true, allowAdvanced:true, dark:false, autoFormats:true, force28:true, recSleep:null, recEnergy:null, recBody:null });
     function savePrefs(){ lsSet('rise:prefs', prefs); }
-    var bell = lsGet('rise:bellLevel', 1);
-    function setBell(n){ bell = Math.max(1, n|0); lsSet('rise:bellLevel', bell); reflectBell(); }
+    function setDarkLabel(){ var b=$('#btnDark'); if(b) b.textContent=document.documentElement.classList.contains('dark')?'Light':'Dark'; }
+    $('#btnDark').onclick=function(){ document.documentElement.classList.toggle('dark'); prefs.dark=document.documentElement.classList.contains('dark'); savePrefs(); setDarkLabel(); };
+
+    /* ===== Wake Lock + Beeps + HUD ===== */
+    var wakeLockRef=null;
+    async function requestWakeLock(){
+      try{
+        if (navigator.wakeLock && navigator.wakeLock.request) {
+          wakeLockRef = await navigator.wakeLock.request('screen');
+          document.addEventListener('visibilitychange', async function(){
+            if (document.visibilityState==='visible' && !wakeLockRef && navigator.wakeLock && navigator.wakeLock.request){
+              try{ wakeLockRef = await navigator.wakeLock.request('screen'); }catch(e){}
+            }
+          });
+        }
+      }catch(e){}
+    }
+    async function releaseWakeLock(){
+      try{ if (wakeLockRef && wakeLockRef.release) await wakeLockRef.release(); }catch(e){} finally{ wakeLockRef=null; }
+    }
+    function beep(f,ms){ var ctx=new (window.AudioContext||window.webkitAudioContext)(); var o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine"; o.frequency.value=f; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+(ms/1000)); }
+    function beepStart(){ beep(1000,180); }
+    function beepSwitch(){ beep(700,140); setTimeout(function(){beep(700,140);},170); }
+    function beepEnd(){ beep(500,130); setTimeout(function(){beep(500,130);},160); setTimeout(function(){beep(500,130);},320); }
+
+    var HUD = {
+      show:function(label, secs){ var h=$('#hud'); h.classList.remove('hidden'); $('#hudLabel').textContent=label||'—'; $('#hudTime').textContent = secs!=null ? (' ('+secs+'s)') : ''; },
+      hide:function(){ $('#hud').classList.add('hidden'); }
+    };
+    function runSchedule(steps, hooks){
+      var i=0, left=steps[0]?steps[0].ms:0, raf;
+      function startStep(k){ if(steps[k] && steps[k].onStart) steps[k].onStart(); left=steps[k]?steps[k].ms:0; }
+      function loop(ts){
+        if(!loop.t0) loop.t0=ts;
+        var dt=ts-(loop.t0||ts); loop.t0=ts;
+        left-=dt;
+        if(hooks && hooks.onTick) hooks.onTick(Math.max(0,left), steps[i]);
+        if(left<=0){
+          i++;
+          if(i>=steps.length){ if(hooks && hooks.onDone) hooks.onDone(); return; }
+          startStep(i);
+        }
+        raf=requestAnimationFrame(loop);
+      }
+      startStep(0); raf=requestAnimationFrame(loop);
+      return function(){ cancelAnimationFrame(raf); };
+    }
+    var stopRef=null;
+    function stopAll(){ if(stopRef){ stopRef(); stopRef=null; } HUD.hide(); releaseWakeLock(); }
+
+    /* ===== YouTube helpers ===== */
+    function ytIdFromUrl(u){
+      try{
+        var url=new URL(u);
+        if(url.hostname.indexOf('youtu.be')>-1) return url.pathname.slice(1).split('/')[0];
+        if(url.pathname.indexOf('/shorts/')===0) return url.pathname.split('/')[2]||null;
+        var v=url.searchParams.get('v'); return v||null;
+      }catch(e){ return null; }
+    }
+    function ytThumbFromUrl(u,q){ var id=ytIdFromUrl(u); return id?('https://img.youtube.com/vi/'+id+'/'+(q||'hqdefault')+'.jpg'):null; }
+
+    /* ===== Data ===== */
+    var bell  = lsGet('rise:bellLevel', 1);
+    function setBell(n){ bell=Math.max(1,n|0); lsSet('rise:bellLevel', bell); reflectBell(); }
     function reflectBell(){ var b=$('#bellBadge'); if(b) b.textContent='Bell L'+bell; var l=$('#lblBell'); if(l) l.textContent='L'+bell; }
 
-    /* ====== Config ====== */
-    var DEFAULT_FMT_ENABLED = lsGet('rise:fmtEnabled', { single:true, repLadder:true, weightLadder:true, double:true, timed:true, uneven:true });
-    var DEFAULT_FIN_AB_ENABLED = lsGet('rise:finABEnabled', { f_single:true, f_rpladder:true, f_wladder:true, f_double:true, f_uneven:true, f_timed:true });
-    var DEFAULT_FIN_C_ENABLED  = lsGet('rise:finCEnabled',  { c_single:true, c_double:true, c_uneven:true, c_wladder:true, c_timed:true, c_rpladder:true });
-    function setFmtEnabled(map){ lsSet('rise:fmtEnabled', map); }
-    function setFinABEnabled(map){ lsSet('rise:finABEnabled', map); }
-    function setFinCEnabled(map){ lsSet('rise:finCEnabled', map); }
-
-    var SINGLE_ONLY = new Set([
-      'Tactical Lunge',
-      'Deadstop Side Swing','Get Up Sit Up','Windmill','Half Kneeling Windmill','Bent Press','Figure 8','Russian Twist',
-      'B-Stance Goodmorning',
-      'Suitcase Deadlift','Plank Pull Through','Half Kneeling Lift','Renegade Row','Elevated Push Up','Bottom Up Squat'
-    ]);
-    var EXCEPT_ALLOW_DOUBLE = new Set(['Bottom Up Squat']);
-
-    /* ====== YouTube demo links (alleen links) ====== */
     var EX_URLS = {
       "Get-ups":"https://www.youtube.com/watch?v=sgd8n917Zv0",
 
@@ -421,10 +547,17 @@
       "Cook Drill":"https://www.youtube.com/watch?v=_84WanOTUk0"
     };
 
-    function EX(name, opt){ var base = { name:name, advanced:false, singleOnly:false, pullup:false }; if(opt){ for(var k in opt){ base[k]=opt[k]; } } return base; }
-    function markSingles(item){ if (SINGLE_ONLY.has(item.name) && !EXCEPT_ALLOW_DOUBLE.has(item.name)) item.singleOnly = true; return item; }
+    var SINGLE_ONLY = new Set([
+      'Tactical Lunge',
+      'Deadstop Side Swing','Get Up Sit Up','Windmill','Half Kneeling Windmill','Bent Press','Figure 8','Russian Twist',
+      'B-Stance Goodmorning',
+      'Suitcase Deadlift','Plank Pull Through','Half Kneeling Lift','Renegade Row','Elevated Push Up','Bottom Up Squat'
+    ]);
+    var EXCEPT_ALLOW_DOUBLE = new Set(['Bottom Up Squat']);
 
-    /* ==== EXACT 6 per pattern ==== */
+    function EX(name, opt){ var base={ name:name, advanced:false, singleOnly:false, pullup:false }; if(opt){ for(var k in opt){ base[k]=opt[k]; } } return base; }
+    function markSingles(item){ if (SINGLE_ONLY.has(item.name) && !EXCEPT_ALLOW_DOUBLE.has(item.name)) item.singleOnly=true; return item; }
+
     var PATTERNS = {
       'Squat': [
         markSingles(EX('Front Squat')),
@@ -484,28 +617,34 @@
       ]
     };
 
-    var FORMATS = [
-      { id:'single',       label:'Single Bell (5–7 reps @ Medium)',                 weight:30, meta:'5–7 reps • Medium' },
-      { id:'repLadder',    label:'Rep Ladder (1–2–3–4–5 @ Medium)',                 weight:25, meta:'Rep Ladder 1–2–3–4–5 @ Medium' },
-      { id:'weightLadder', label:'Weight Ladder (5, 3, 2+ @ Light, Medium, Heavy)', weight:20, meta:'Weight Ladder (5@L, 3@M, 2+@H)' },
-      { id:'double',       label:'Double Bell (5–7 reps @ 2× Light)',               weight:12, meta:'Double Bell (5–7 reps @ 2× Light)' },
-      { id:'timed',        label:'Timed (20s max reps @ Light)',                    weight:5,  meta:'Timed (20s max reps @ Light)' },
-      { id:'uneven',       label:'Uneven Bell (5–7 reps @ Medium & Light)',         weight:8,  meta:'Uneven Bell (5–7 reps @ Medium & Light)' },
-    ];
-    var LS_PREV_FORMAT = 'rise_prev_format_v1';
-
+    /* Formats */
+var FORMATS = [
+  { id:'single',
+    label:'Single Bell — 5–7 reps @ Medium',
+    weight:25
+  },
+  { id:'repLadder',
+    label:'Rep Ladder — 1–2–3–4–5 reps @ Medium',
+    weight:20
+  },
+  { id:'weightLadder',
+    label:'Weight Ladder — 5 (Light) → 3 (Medium) → 2+ (Heavy)',
+    weight:18
+  },
+  { id:'double',
+    label:'Double Bell — 5–7 reps @ 2× Light',
+    weight:15
+  },
+  { id:'timed',
+    label:'Timed — 3 rounds per exercise: 20s work / 10s rest ×2 (unilateral = L+R; bilateral = 2×20s). Bell down = set finished (single effort)',
+    weight:12
+  },
+  { id:'uneven',
+    label:'Uneven — 5–7 reps; run 2 sets: set 1 = L bell left + M bell right, set 2 = swap sides',
+    weight:10
+  }
+];
     /* Finishers */
-    var CARRIES = ['Suitcase Carry','Front Rack Carry','Overhead Carry','Bottom Up Carry','Bear Crawl','Cook Drill'];
-    var CARRY_FORMATS = [
-      { id:'c_single',   label:'Single bell — Max meters in 10 min',               meta:'Single bell — Max meters in 10 min' },
-      { id:'c_double',   label:'Double bell — Max meters in 10 min',               meta:'Double bell — Max meters in 10 min' },
-      { id:'c_uneven',   label:'Uneven bell — Max meters in 10 min (switch rest)', meta:'Uneven bell — Max meters in 10 min (switch rest)' },
-      { id:'c_wladder',  label:'Weight ladder — H → M → L (max meters each)',      meta:'Weight ladder — H → M → L (max meters each)' },
-      { id:'c_timed',    label:'Timed — 40s carry / 20s rest',                     meta:'Timed — 40s carry / 20s rest' },
-      { id:'c_rpladder', label:'Rep ladder — 50m R, 100m R, 50m L, 100m L, …',     meta:'Rep ladder — 50m R, 100m L, 50m L, 100m L, …' },
-    ];
-
-    /* Ballistics (A/B) — geen Clean & Press hier */
     var FIN_A_ITEMS = [
       { name:'Push Press' },
       { name:'Push Jerk', advanced:true, replacement:'Viking Push Press' },
@@ -517,17 +656,546 @@
       { name:'One-arm Swing' }
     ];
     var FIN_BALLISTIC_FORMATS = [
-      { id:'f_single',   label:'Single Bell (10–20 @ Medium)',           meta:'Single Bell (10–20 @ Medium)' },
-      { id:'f_rpladder', label:'Rep Ladder (5–10–15–20 @ Medium)',       meta:'Rep Ladder (5–10–15–20 @ Medium)' },
-      { id:'f_wladder',  label:'Weight Ladder (10, 10, 5+ @ L, M, H)',    meta:'Weight Ladder (10, 10, 5+ @ L, M, H)' },
-      { id:'f_double',   label:'Double Bell (2–4–6–(8–10) @ 2× Light)',   meta:'Double Bell (2–4–6–(8–10) @ 2× Light)' },
-      { id:'f_uneven',   label:'Uneven (5–10 @ L + M)',                   meta:'Uneven (5–10 @ L + M)' },
-      { id:'f_timed',    label:'Timed (20s max reps, 40s rest @ Medium)', meta:'Timed (20s max reps, 40s rest @ Medium)' },
+      { id:'f_single',   label:'Single Bell (10–20 @ Medium)',           emom:false },
+      { id:'f_rpladder', label:'Rep Ladder (5–10–15–20 @ Medium)',       emom:false },
+      { id:'f_wladder',  label:'Weight Ladder (10,10,5+ @ L,M,H)',       emom:false },
+      { id:'f_double',   label:'Double Bell (2–4–6–(8–10) @ 2× L)',       emom:false },
+      { id:'f_uneven',   label:'Uneven (5–10 @ L + M)',                  emom:false },
+      { id:'f_timed',    label:'Timed (EMOM: 10-20 @ M ×10)',              emom:true  }
     ];
-    var LS_FIN_GROUP = 'rise:finisher_group_v1';
-    var LS_PREV_FINISHER_FMT = 'rise:prev_finisher_fmt_v1';
+    var CARRY_FORMATS = [
+      { id:'c_single',   label:'Single bell — Max meters in 10 min',               kind:'standard' },
+      { id:'c_double',   label:'Double bell — Max meters in 10 min',               kind:'standard' },
+      { id:'c_uneven',   label:'Uneven bell — Max meters in 10 min',               kind:'standard' },
+      { id:'c_wladder',  label:'Weight ladder — H → M → L (max meters each)',      kind:'standard' },
+      { id:'c_timed',    label:'Timed — Continuous max effort (1 bell, no rest)',  kind:'timedCarry' },
+      { id:'c_rpladder', label:'Rep ladder — distance blocks vary (10 min)',       kind:'standard' }
+    ];
+var FIN_BALLISTIC_TEXT = {
+  f_single:   'Format: Single Bell — 10–20 reps each set @ Medium',
+  f_rpladder: 'Format: Rep Ladder — 5–10–15–20 reps per arm @ Medium',
+  f_wladder:  'Format: Weight Ladder — 10 (Light) → 10 (Medium) → 5+ (Heavy)',
+  f_double:   'Format: Double Bell — 2–4–6–(8–10) reps @ 2× Light',
+  f_uneven:   'Format: Uneven — 5–10 reps; run 2 sets (L bell left + M bell right; then swap)',
+  // EMOM met 1 piep/min en 3 piepjes op het einde in jouw timer:
+  f_timed:    'Format: Timed — EMOM ×10 min, aim 10–20 reps @ Medium. Bell down = set finished (single effort)'
+};
+var CARRY_TEXT = {
+  c_single:   'Format: Carry — Max distance in 10 minutes (1 bell, rest as needed)',
+  c_double:   'Format: Carry — Max distance in 10 minutes (2 bells, rest as needed)',
+  c_uneven:   'Format: Carry — Max distance in 10 minutes; swap bells left/right after each set',
+  c_wladder:  'Format: Carry — Max distance per bell: Heavy → Medium → Light',
+  c_rpladder: 'Format: Carry — Distance blocks vary across 10 minutes',
+  // Timed carry = continuous, single effort:
+  c_timed:    'Format: Carry — Continuous max effort for 10 minutes (no rest). Bell down = session finished (single effort)'
+};
 
-    /* ====== KS1 + KS2 (generator only) ====== */
+    /* ===== Pillars / Progression ===== */
+    var PILLAR = {
+      lastWL: lsGet('rise:pillar:lastWL', null),
+      lastRL: lsGet('rise:pillar:lastRL', null),
+      passWL: lsGet('rise:pillar:passWL', false),
+      passRL: lsGet('rise:pillar:passRL', false)
+    };
+    function savePillar(){ lsSet('rise:pillar:lastWL', PILLAR.lastWL); lsSet('rise:pillar:lastRL', PILLAR.lastRL); lsSet('rise:pillar:passWL', PILLAR.passWL); lsSet('rise:pillar:passRL', PILLAR.passRL); }
+    function isoToday(){ return new Date().toISOString().slice(0,10); }
+    function daysBetween(a,b){ if(!a||!b) return Infinity; return Math.floor((new Date(b)-new Date(a))/86400000); }
+    function whichOverdue28(){
+      var dsWL=daysBetween(PILLAR.lastWL, isoToday());
+      var dsRL=daysBetween(PILLAR.lastRL, isoToday());
+      var over=[];
+      if(dsWL>=28) over.push({k:'WL',ds:dsWL});
+      if(dsRL>=28) over.push({k:'RL',ds:dsRL});
+      if(!over.length) return null; over.sort(function(a,b){return b.ds-a.ds;}); return over[0].k;
+    }
+    function tryPromoteGoldilocks(){
+      if(PILLAR.passWL && PILLAR.passRL){
+        setBell(bell+1);
+        toast('🎉 Goldilocks up! (both pillars passed)');
+        PILLAR.passWL=false; PILLAR.passRL=false; savePillar();
+      }
+    }
+
+    /* ===== Session Generation ===== */
+    function listEnabledFrom(pattern){
+      return PATTERNS[pattern].map(function(it){
+        var out={}; for(var k in it){ out[k]=it[k]; }
+        if(!prefs.allowAdvanced && it.advanced && it.replacement){ out={ name: it.replacement, advanced:false, singleOnly:false, pullup:false }; }
+        if(!prefs.pullupBar && it.pullup && it.replacement){ out={ name: it.replacement, advanced:false, singleOnly:false, pullup:false }; }
+        out.singleOnly = SINGLE_ONLY.has(out.name) && !EXCEPT_ALLOW_DOUBLE.has(out.name);
+        return out;
+      });
+    }
+    function pickExercise(pattern){
+      var list=listEnabledFrom(pattern);
+      var last=lsGet('rise_prev_ex_'+pattern, null);
+      var pool=list.filter(function(e){ return e.name!==last; });
+      var pick=(pool.length?pool:list)[Math.floor(Math.random()*(pool.length?pool.length:list.length))];
+      lsSet('rise_prev_ex_'+pattern, pick.name);
+      return pick;
+    }
+    function pickFormatAuto(){
+      var sum=FORMATS.reduce(function(a,f){ return a+(f.weight||1); },0);
+      var r=Math.random()*sum;
+      for(var i=0;i<FORMATS.length;i++){ r-=(FORMATS[i].weight||1); if(r<=0) return FORMATS[i]; }
+      return FORMATS[0];
+    }
+    function buildPart2(){
+      var keys=Object.keys(PATTERNS).sort(function(){ return Math.random()-0.5; });
+      return keys.map(function(p){
+        var ex=pickExercise(p);
+        var unilateral = ex.singleOnly || ['Small Row','Front Lunge','Reverse Lunge','Side Lunge','Curtsy Lunge','Tactical Lunge','Get Up Sit Up','Windmill','Half Kneeling Windmill','Bent Press','Half Kneeling Press','Single Leg Deadlift'].indexOf(ex.name)>-1;
+        return {pattern:p, name:ex.name, singleOnly:ex.singleOnly, unilateral:unilateral};
+      });
+    }
+    var LS_FIN_GROUP='rise:fin:lastGroup';
+    function pickFinGroupRotate(){
+      var last = localStorage.getItem(LS_FIN_GROUP)||null;
+      var groups=['A','B','C'];
+      var pool = last ? groups.filter(function(g){ return g!==last; }) : groups.slice();
+      var g = pool[Math.floor(Math.random()*pool.length)];
+      localStorage.setItem(LS_FIN_GROUP,g);
+      return g;
+    }
+    function pickBallisticExercise(group){
+      var items = group==='A' ? FIN_A_ITEMS.slice() : FIN_B_ITEMS.slice();
+      var keyPrev='rise:prevFin_'+group;
+      var prevName=lsGet(keyPrev, null);
+      var pool=items.map(function(it){ return (!prefs.allowAdvanced && it.advanced && it.replacement) ? {name:it.replacement} : {name:it.name}; });
+      var poolNR = prevName ? pool.filter(function(x){ return x.name!==prevName; }) : pool.slice();
+      var pick=(poolNR.length?poolNR:pool)[Math.floor(Math.random()*(poolNR.length?poolNR.length:pool.length))];
+      lsSet(keyPrev, pick.name);
+      return pick.name;
+    }
+function pickFinisher(){
+  var group = pickFinGroupRotate();
+  var auto  = !!prefs.autoFormats;
+
+  if (group === 'C') {
+    // === Carry (groep C) ===
+    var exList = ['Suitcase Carry','Front Rack Carry','Overhead Carry','Bottom Up Carry','Bear Crawl','Cook Drill'];
+    var exercise = exList[Math.floor(Math.random() * exList.length)];
+
+    if (!auto) {
+      // Auto uit → ALTIJD single-bell max meters (10 min)
+      var cSingle = { id:'c_single', label:'Single bell — Max meters in 10 min', meta:'Single bell — Max meters in 10 min' };
+      return { kind:'carry', group:group, exercise:exercise, format:cSingle };
+    }
+
+    // Auto aan → kies willekeurig uit carry formats
+    var cf = CARRY_FORMATS[Math.floor(Math.random() * CARRY_FORMATS.length)];
+    return { kind:'carry', group:group, exercise:exercise, format: cf };
+  }
+
+  // === Ballistics (groep A/B) ===
+  var exercise = pickBallisticExercise(group);
+
+  if (!auto) {
+    // Auto uit → ALTIJD single-bell 10–20 @ Medium
+    var fSingle = { id:'f_single', label:'Single Bell (10–20 @ Medium)', emom:false, meta:'Single Bell (10–20 @ Medium)' };
+    return { kind:'ballistic', group:group, exercise:exercise, format:fSingle };
+  }
+
+  // Auto aan → kies willekeurig uit ballistic formats
+  var bf = FIN_BALLISTIC_FORMATS[Math.floor(Math.random() * FIN_BALLISTIC_FORMATS.length)];
+  return { kind:'ballistic', group:group, exercise:exercise, format: bf };
+}
+
+    function decideMode(){
+      var total=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
+      if(total>=11) return 'full';
+      if(total>=9) return 'short';
+      return 'recovery';
+    }
+    function generateSession(){
+      var mode=decideMode();
+      var fmt = prefs.autoFormats ? pickFormatAuto() : FORMATS[0];
+      var part2 = buildPart2();
+      var finisher = pickFinisher(); // ABC rotatie blijft lopen; short slaat part3 alleen over in UI
+      return { id: uuid(), program:'Rise', createdAt: nowISO(), mode:mode, format: fmt, part2: part2, finisher: finisher, bellLevel: bell };
+    }
+
+    /* ===== Render ===== */
+    var currentSession=null;
+    function buildDemoHtmlFor(name){
+      var url=EX_URLS[name]||null; var thumb=url? ytThumbFromUrl(url,'hqdefault'):null;
+      return ''+
+      '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
+        '<div class="flex items-start gap-2">'+
+          '<div class="grow">'+
+            '<div class="text-xs muted mb-1">&nbsp;</div>'+
+            '<div class="font-medium">'+(name||'—')+'</div>'+
+          '</div>'+
+          '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
+        '</div>'+
+        '<div class="disclosure max-h-0 mt-2" data-body>'+
+          (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(name||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
+          (url ? '<div class="mt-2 text-sm"><a class="underline" href="'+url+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '')+
+        '</div>'+
+      '</article>';
+    }
+    function reflectForceTestUI(){
+      var need = prefs.force28 ? whichOverdue28() : null;
+      var box=$('#forceTest');
+      if(!need){ box.classList.add('hidden'); return; }
+      $('#forceMsg').textContent = "It’s been 28 days since your last "+(need==='WL'?'Weight Ladder':'Rep Ladder')+" test. Do it before the circuit or inside today’s session?";
+      box.classList.remove('hidden');
+      $('#btnTestBefore').onclick = function(){ injectTestBlock(need, 'before'); box.classList.add('hidden'); };
+      $('#btnTestIn').onclick     = function(){ injectTestBlock(need, 'in');     box.classList.add('hidden'); };
+    }
+    function renderRecoveryPreview(node, rec){
+      if(!node) return;
+      var lines = (rec.recovery && rec.recovery.main) ? rec.recovery.main : [];
+      node.innerHTML = lines.map(function(l){ return '<p>'+(l?l:'&nbsp;')+'</p>'; }).join('');
+    }
+    function renderSession(s){
+      currentSession=s;
+      var st=$('#sessTitle'); if(st) st.textContent='Session — '+fmtDate(new Date(s.createdAt||nowISO()));
+      reflectBell();
+
+      // Part1 demo
+      var url=EX_URLS['Get-ups']; var th=url? ytThumbFromUrl(url,'hqdefault'):null;
+      if(th) $('#p1Img').src=th; if(url) $('#p1Demo').href=url;
+
+      // Mode banner
+      var banner=$('#modeBanner'); banner.classList.add('hidden'); banner.textContent='';
+      if(s.mode==='recovery'){ banner.textContent='Recovery: Part 1 only today (quality Get-ups).'; banner.classList.remove('hidden'); }
+      else if(s.mode==='short'){ banner.textContent='Short Session: Part 1 + Part 2 (no finisher).'; banner.classList.remove('hidden'); }
+
+      // Part visibility
+      $('#part1').style.display='';
+      $('#part2').style.display = (s.mode==='recovery') ? 'none' : '';
+      $('#part3').style.display = (s.mode==='recovery') ? 'none' : '';
+
+      // Part 2
+      if(s.mode!=='recovery'){
+        $('#meta2').textContent = s.format ? ('Format: ' + (s.format.label || '—')) : '—';
+        $('#p2Timer').textContent = (s.format && s.format.id==='timed') ? '▶ Start Timed' : '▶ 25-min timer';
+        $('#p2List').innerHTML = (s.part2||[]).map(function(it){
+          var badge = (s.format && (s.format.id==='double' || s.format.id==='uneven') && it.singleOnly)
+            ? '<span class="marker text-amber-500"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
+          var demoURL=EX_URLS[it.name]; var thumb=demoURL? ytThumbFromUrl(demoURL,'hqdefault'):null;
+          return ''+
+          '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
+            '<div class="flex items-start gap-2">'+
+              '<div class="grow">'+
+                '<div class="text-xs muted mb-1">'+(it.pattern||'')+'</div>'+
+                '<div class="font-medium">'+(it.name||'—')+'</div>'+
+                '<div class="mt-1">'+badge+'</div>'+
+              '</div>'+
+              '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
+            '</div>'+
+            '<div class="disclosure max-h-0 mt-2" data-body>'+
+              (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(it.name||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
+              (demoURL ? '<div class="mt-2 text-sm"><a class="underline" href="'+demoURL+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '')+
+            '</div>'+
+          '</article>';
+        }).join('');
+      } else {
+      }
+
+     // Part 3
+var meta3 = $('#meta3'), host3 = $('#p3List');
+
+if (s.mode === 'full') {
+  if (s.finisher && s.finisher.kind === 'ballistic') {
+    var f = FIN_BALLISTIC_FORMATS.find(function(x){ 
+      return x.id === (s.finisher.format && s.finisher.format.id); 
+    });
+    var fmt3Label = f ? FIN_BALLISTIC_TEXT[f.id] : '—';
+    meta3.textContent = (s.finisher.group==='A' ? 'Ballistic (Anterior) — ' : 'Ballistic (Posterior) — ')
+      + fmt3Label.replace(/^Format:\s*/,'Format: ');
+    host3.innerHTML = buildDemoHtmlFor(s.finisher.exercise);
+  } else {
+    var fc = CARRY_FORMATS.find(function(x){ 
+      return x.id === (s.finisher.format && s.finisher.format.id); 
+    });
+    var fmt3Carry = fc ? CARRY_TEXT[fc.id] : '—';
+    meta3.textContent = 'Carry (Group C) — ' + fmt3Carry.replace(/^Format:\s*/,'Format: ');
+    host3.innerHTML = buildDemoHtmlFor(s.finisher.exercise);
+  }
+} else if (s.mode === 'short') {
+  meta3.textContent = 'Because Recovery Score, no finisher today';
+  host3.innerHTML = '';
+} else { // recovery
+  meta3.textContent = '';
+  host3.innerHTML = '';
+}
+
+      reflectForceTestUI();
+
+      // Recovery tab preview if open
+      if (!$('#tab-recovery').classList.contains('hidden') && s.mode==='recovery') {
+        renderRecoveryPreview($('#recPreview'), s);
+      }
+
+      lsSet('rise:current_session', s);
+    }
+
+    /* ===== Force Test inject ===== */
+    function injectTestBlock(kind, where){
+      var mount = (where==='before')? $('#part1') : $('#part2');
+      var id='test-'+kind;
+      if(document.getElementById(id)) return;
+      var card=document.createElement('div');
+      card.id=id; card.className='card rounded-xl p-3 mt-3';
+      var title = (kind==='WL')? 'Weight Ladder Test — Goldilocks' : 'Rep Ladder Test — Goldilocks';
+      var body = (kind==='WL')
+        ? 'Perform: (G−4)×5, G×3, (G+4)×2+ per arm. Pillar pass = 5/arm @ Heavy (+4).'
+        : 'Perform 1–2–3–4–5 per arm @ Goldilocks zonder haperingen. Pillar pass = complete ladder (beide armen).';
+      card.innerHTML =
+        '<div class="flex items-center justify-between">'+
+          '<div><h4 class="font-semibold">'+title+'</h4><p class="text-xs muted">'+body+'</p></div>'+
+          '<button class="btn-sm bg-slate-900 text-white" data-test="'+kind+'">Mark as Done</button>'+
+        '</div>';
+      mount.parentNode.insertBefore(card, mount.nextSibling);
+      card.querySelector('[data-test]').onclick=function(){
+        var k=(kind==='WL')? 'passWL' : 'passRL';
+        PILLAR[k]=true;
+        if(kind==='WL') PILLAR.lastWL=isoToday(); else PILLAR.lastRL=isoToday();
+        savePillar(); toast((kind==='WL'?'WL':'RL')+' saved.');
+        tryPromoteGoldilocks();
+        card.remove();
+      };
+    }
+
+    /* ===== Cards disclosure ===== */
+    document.addEventListener('click', function(e){
+      var card = e.target.closest ? e.target.closest('[data-desc]') : null; if(!card) return;
+      var body = card.querySelector('[data-body]'); if(!body) return;
+      var willOpen = !(card.getAttribute('data-open')==='true');
+      card.setAttribute('data-open', willOpen ? 'true' : 'false');
+      card.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      var chev=card.querySelector('.chev'); if(chev) chev.textContent = willOpen ? '–' : '+';
+      if(willOpen){
+        body.style.maxHeight=body.scrollHeight+'px';
+        var img=body.querySelector('img');
+        if(img && !img.complete){
+          img.addEventListener('load', function onL(){ body.style.maxHeight=body.scrollHeight+'px'; img.removeEventListener('load', onL); });
+        }
+      } else body.style.maxHeight='0px';
+    });
+
+    /* ===== Timers ===== */
+    $('#p1Timer').onclick = async function(){
+      stopAll(); await requestWakeLock(); beepStart();
+      var steps=[
+        {label:'Get-up', ms:10*60*1000, onStart:function(){beepStart();}},
+        {label:'Done',   ms:300,        onStart:function(){beepEnd();}}
+      ];
+      stopRef = runSchedule(steps,{ onTick:function(ms,s){ HUD.show(s.label, Math.ceil(ms/1000)); }, onDone:stopAll });
+    };
+
+    $('#p2Timer').onclick = async function(){
+      if(!currentSession || currentSession.mode==='recovery') return;
+      stopAll(); await requestWakeLock();
+      var isTimed = currentSession.format && currentSession.format.id==='timed';
+      if(!isTimed){
+        var steps=[
+          {label:'Circuit', ms:25*60*1000, onStart:function(){beepStart();}},
+          {label:'Done',    ms:300,        onStart:function(){beepEnd();}}
+        ];
+        stopRef=runSchedule(steps,{ onTick:function(ms,s){ HUD.show(s.label, Math.ceil(ms/1000)); }, onDone:stopAll });
+        return;
+      }
+      // Timed 20-10-20-10, 3 rounds
+      var ex=(currentSession.part2||[]);
+      var rounds=3, restBetweenRoundsSec=40;
+      var steps=[];
+      for(var r=1;r<=rounds;r++){
+        steps.push({label:'Round '+r+' start', ms:500, onStart:function(){beepStart();}});
+        for(var idx=0; idx<ex.length; idx++){
+          var it=ex[idx];
+          if(it.unilateral || it.singleOnly){
+            steps.push({label:it.name+' — Left 20s',  ms:20000, onStart:function(){beepStart();}});
+            steps.push({label:'Switch 10s',           ms:10000, onStart:function(){beepSwitch();}});
+            steps.push({label:it.name+' — Right 20s', ms:20000, onStart:function(){beepStart();}});
+            steps.push({label:'Next 10s',             ms:10000, onStart:function(){beepEnd();}});
+          } else {
+            steps.push({label:it.name+' — Set 1 (20s)', ms:20000, onStart:function(){beepStart();}});
+            steps.push({label:'Switch 10s',             ms:10000, onStart:function(){beepSwitch();}});
+            steps.push({label:it.name+' — Set 2 (20s)', ms:20000, onStart:function(){beepStart();}});
+            steps.push({label:'Next 10s',               ms:10000, onStart:function(){beepEnd();}});
+          }
+        }
+        steps.push({label:'Round '+r+' done', ms:350, onStart:function(){beepEnd();}});
+        if(r<rounds && restBetweenRoundsSec>0) steps.push({label:'Round rest', ms:restBetweenRoundsSec*1000, onStart:function(){beepSwitch();}});
+      }
+      steps.push({label:'Circuit done', ms:300, onStart:function(){beepEnd();}});
+      stopRef=runSchedule(steps,{ onTick:function(ms,s){ HUD.show(s.label, Math.ceil(ms/1000)); }, onDone:stopAll });
+    };
+
+$('#p3Timer').onclick = async function(){
+  if(!currentSession || currentSession.mode!=='full') return;
+  stopAll(); 
+  await requestWakeLock();
+
+  var fin = currentSession.finisher;
+
+  if(fin.kind === 'ballistic'){
+    // Zoek format-details voor ballistic finisher
+    var f = null; 
+    for (var i=0; i<FIN_BALLISTIC_FORMATS.length; i++){
+      if (FIN_BALLISTIC_FORMATS[i].id === fin.format.id){ 
+        f = FIN_BALLISTIC_FORMATS[i]; 
+        break; 
+      }
+    }
+
+    // === EMOM variant: 1 piep per minuut, 3 piepjes aan het eind ===
+    if (f && f.emom){
+      var steps = [];
+      for (var k = 1; k <= 10; k++){
+        steps.push({
+          label: 'EMOM ' + k + '/10',
+          ms: 60000,
+          onStart: function(){ beepStart(); } // 1 piep aan begin van elke minuut
+        });
+      }
+      // Einde-signaal (3 piepjes)
+      steps.push({
+        label: 'Finisher done',
+        ms: 300,
+        onStart: function(){ beepEnd(); }
+      });
+
+      stopRef = runSchedule(steps, {
+        onTick: function(ms, s){ HUD.show(s.label, Math.ceil(ms/1000)); },
+        onDone: stopAll
+      });
+      return;
+    }
+
+    // Niet-EMOM ballistic: 10 minuten doorlopende timer
+    var stepsB = [
+      { label: fin.exercise, ms: 10*60*1000, onStart: function(){ beepStart(); } },
+      { label: 'Done',       ms: 300,        onStart: function(){ beepEnd(); } }
+    ];
+    stopRef = runSchedule(stepsB, {
+      onTick: function(ms, s){ HUD.show(s.label, Math.ceil(ms/1000)); },
+      onDone: stopAll
+    });
+    return;
+
+  } else {
+    // Carry finisher
+    var c = null; 
+    for (var j=0; j<CARRY_FORMATS.length; j++){
+      if (CARRY_FORMATS[j].id === fin.format.id){ 
+        c = CARRY_FORMATS[j]; 
+        break; 
+      }
+    }
+
+    // Timed carry = continuous effort (geen vaste intervallen)
+    if (c && c.kind === 'timedCarry'){
+      beepStart();
+      HUD.show('Carry — continuous (max effort, no rest)', null);
+      return; // handmatig stoppen wanneer je wilt
+    }
+
+    // Standaard carry: 10 minuten max afstand
+    var stepsC = [
+      { label: fin.exercise + ' — Max meters (10\')', ms: 10*60*1000, onStart: function(){ beepStart(); } },
+      { label: 'Done',                                 ms: 300,        onStart: function(){ beepEnd(); } }
+    ];
+    stopRef = runSchedule(stepsC, {
+      onTick: function(ms, s){ HUD.show(s.label, Math.ceil(ms/1000)); },
+      onDone: stopAll
+    });
+    return;
+  }
+};
+    /* ===== History ===== */
+    function renderHistory(){
+      var hist=lsGet('rise:history', []);
+      var host=$('#histList');
+      if(!hist.length){ host.innerHTML='<p class="text-sm muted">Empty.</p>'; return; }
+      host.innerHTML = hist.slice().reverse().map(function(h){
+        var s=h.session||{};
+        var f2=s.format && (s.format.label||s.format.meta) ? (s.format.label||s.format.meta) : '';
+        var f3='';
+        if(s.finisher && s.finisher.kind==='ballistic'){
+          var f=FIN_BALLISTIC_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
+          f3=f? f.label:'';
+        } else if (s.finisher && s.finisher.format){
+          var fc=CARRY_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
+          f3=fc? fc.label:'';
+        }
+        var mode = s.mode||'full';
+        return '<div class="py-2 border-b border-black/10 dark:border-white/10">'+
+          '<div class="text-sm"><strong>'+new Date(h.saved_at).toLocaleString()+'</strong> • '+mode+' • Bell L'+(s.bellLevel||bell)+'</div>'+
+          '<div class="text-xs mt-1">'+f2+((f2&&f3)?' — ':'')+f3+'</div>'+
+          (s.part2? '<div class="text-xs mt-1">'+s.part2.map(function(it){return it.pattern+': '+it.name;}).join(' • ')+'</div>':'' )+
+        '</div>';
+      }).join('');
+    }
+    function exportJSON(){ var hist=lsGet('rise:history', []); var blob=new Blob([JSON.stringify(hist,null,2)], {type:'application/json'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='rise-history.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+    function toCSV(rows){
+      function esc(v){ v = (v==null?'':String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
+      var header=["saved_at","mode","bellLevel","format2","format3","part2"];
+      var out=[header.join(",")];
+      rows.forEach(function(h){
+        var s=h.session||{};
+        var f2=s.format && (s.format.label||s.format.meta) ? (s.format.label||s.format.meta) : '';
+        var f3='';
+        if(s.finisher && s.finisher.kind==='ballistic'){ var f=FIN_BALLISTIC_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0]; f3=f? f.label:''; }
+        else if (s.finisher && s.finisher.format){ var fc=CARRY_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0]; f3=fc? fc.label:''; }
+        out.push([
+          h.saved_at||"",
+          s.mode||"",
+          s.bellLevel||"",
+          f2,
+          f3,
+          (s.part2||[]).map(function(it){return it.pattern+': '+it.name;}).join(" | ")
+        ].map(esc).join(","));
+      });
+      return out.join("\n");
+    }
+    function exportCSV(){ var hist=lsGet('rise:history', []); var csv=toCSV(hist); var blob=new Blob([csv], {type:'text/csv'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+    $('#btnExportJSON').onclick=exportJSON;
+    $('#btnExportCSV').onclick=exportCSV;
+    $('#btnClearHist').onclick=function(){
+      lsSet('rise:history', []);
+      setBell(1);
+      lsDel('rise:current_session');
+      toast('All data cleared. Bell reset to L1.');
+      renderHistory(); reflectBell();
+    };
+
+    /* ===== Complete (auto pillar Q) ===== */
+    var progDlg=(function(){ var el=$('#progModal'); return { open:function(){ if(el && el.showModal) el.showModal(); }, close:function(){ if(el && el.close) el.close(); } }; })();
+    $('#btnComplete').onclick = function(){
+      if(!currentSession){ toast('No session to complete.'); return; }
+      var shouldAsk=false, question='';
+      if(currentSession.format && currentSession.format.id==='repLadder'){
+        shouldAsk = (currentSession.part2||[]).some(function(it){ return it.name==='Military Press'; });
+        if(shouldAsk) question = "Military Press • Rep Ladder 1–2–3–4–5 — completed all rungs per arm?";
+      } else if (currentSession.format && currentSession.format.id==='weightLadder'){
+        shouldAsk = (currentSession.part2||[]).some(function(it){ return it.name==='Military Press'; });
+        if(shouldAsk) question = "Military Press • Weight Ladder (5 @ Heavy) — 5 solid reps per arm?";
+      }
+      function saveAndToast(){
+        var hist=lsGet('rise:history', []);
+        hist.push({ saved_at: nowISO(), session: currentSession });
+        lsSet('rise:history', hist);
+        lsDel('rise:current_session');
+        toast('Session saved to history.');
+      }
+      if(shouldAsk){
+        $('#progQuestion').textContent=question;
+        progDlg.open();
+        $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
+        $('#progYes').onclick= function(){
+          if(question.indexOf('Rep Ladder')>-1){ PILLAR.passRL=true; PILLAR.lastRL=isoToday(); }
+          else { PILLAR.passWL=true; PILLAR.lastWL=isoToday(); }
+          savePillar(); tryPromoteGoldilocks();
+          progDlg.close(); saveAndToast();
+        };
+      } else saveAndToast();
+    };
+
+    /* ===== Recovery builders (tab) ===== */
     var KS1 = {
       "Roll to Press": ["Wrist Turns","Neck Rotations","Arm Bar","Diagonal Hip Stretch","Roll to Press Movement"],
       "Press to Elbow": ["Diagonal (bend knee) to press hand","Neck Rotations","Thoracic Waves","Shoulder Rotations","Press to Elbow"],
@@ -559,251 +1227,64 @@
         "Bretzell 2.0 — Fingertip Under Base Hand, Side Bend"
       ]
     };
-
-    /* ====== Bodyweight Mobility Flow — 7 regio’s ====== */
-    var BW_REGIONS = [
-      "Pols / Arm",
-      "Schouder / Bovenrug",
-      "Nek",
-      "Rug / Wervelkolom",
-      "Heupen",
-      "Benen / Enkels",
-      "Transitie / Full-body"
-    ];
+    var BW_REGIONS = ["Pols / Arm","Schouder / Bovenrug","Nek","Rug / Wervelkolom","Heupen","Benen / Enkels","Transitie / Full-body"];
     var BODYWEIGHT_POOLS = {
-      "Pols / Arm": [
-        "Wrist CARs",
-        "Tabletop Wrist Stretch (extension)",
-        "Reverse Tabletop Wrist Stretch (flexion)",
-        "Quadruped Wrist Circles",
-        "Prayer Stretch",
-        "Reverse Prayer Stretch",
-        "Forearm Flexor Stretch",
-        "Forearm Extensor Stretch"
-      ],
-      "Schouder / Bovenrug": [
-        "Scapula Push-ups",
-        "Crab Reach",
-        "Shoulder CARs",
-        "Thread the Needle (T-spine)",
-        "Prone Y-T-W",
-        "Wall Slides",
-        "Scapular Wall Clocks"
-      ],
-      "Nek": [
-        "Neck CARs",
-        "Chin Tucks (supine or standing)",
-        "Ear-to-Shoulder Stretch (lateral)",
-        "Slow Neck Rotations",
-        "Nods (flexion/extension)",
-        "Levator Scapulae Stretch"
-      ],
-      "Rug / Wervelkolom": [
-        "Cat Stretch (McGill)",
-        "Segmental Cat-Cow",
-        "Prone Press-up (McKenzie)",
-        "Side-lying Open Book",
-        "Child’s Pose with Side Reach",
-        "Quadruped T-Spine Rotation"
-      ],
-      "Heupen": [
-        "Seated Hip CARs",
-        "90/90 Hip Switch",
-        "Half-kneeling Hip Flexor Stretch",
-        "Figure-4 / Pigeon (gentle)",
-        "Glute Bridge → March",
-        "Deep Squat Hold with Shift"
-      ],
-      "Benen / Enkels": [
-        "Toe Sit with Rock (toe ext)",
-        "Ankle CARs",
-        "Calf Stretch (knee straight)",
-        "Soleus Stretch (knee bent)",
-        "Hinge Hamstring Stretch",
-        "Cossack Squat Mobility",
-        "Tibialis Raises (wall)"
-      ],
-      "Transitie / Full-body": [
-        "Beast → Step Under → Return",
-        "Z-Sit → Side Roll → Prone Return",
-        "Turkish Get-up Sit-up (to elbow)",
-        "Inchworm Walkouts",
-        "World’s Greatest Stretch",
-        "Squat-to-Stand with T-Spine Opener"
-      ]
+      "Pols / Arm": [ "Wrist CARs","Tabletop Wrist Stretch (extension)","Reverse Tabletop Wrist Stretch (flexion)","Quadruped Wrist Circles","Prayer Stretch","Reverse Prayer Stretch","Forearm Flexor Stretch","Forearm Extensor Stretch" ],
+      "Schouder / Bovenrug": [ "Scapula Push-ups","Crab Reach","Shoulder CARs","Thread the Needle (T-spine)","Prone Y-T-W","Wall Slides","Scapular Wall Clocks" ],
+      "Nek": [ "Neck CARs","Chin Tucks (supine or standing)","Ear-to-Shoulder Stretch (lateral)","Slow Neck Rotations","Nods (flexion/extension)","Levator Scapulae Stretch" ],
+      "Rug / Wervelkolom": [ "Cat Stretch (McGill)","Segmental Cat-Cow","Prone Press-up (McKenzie)","Side-lying Open Book","Child’s Pose with Side Reach","Quadruped T-Spine Rotation" ],
+      "Heupen": [ "Seated Hip CARs","90/90 Hip Switch","Half-kneeling Hip Flexor Stretch","Figure-4 / Pigeon (gentle)","Glute Bridge → March","Deep Squat Hold with Shift" ],
+      "Benen / Enkels": [ "Toe Sit with Rock (toe ext)","Ankle CARs","Calf Stretch (knee straight)","Soleus Stretch (knee bent)","Hinge Hamstring Stretch","Cossack Squat Mobility","Tibialis Raises (wall)" ],
+      "Transitie / Full-body": [ "Beast → Step Under → Return","Z-Sit → Side Roll → Prone Return","Turkish Get-up Sit-up (to elbow)","Inchworm Walkouts","World’s Greatest Stretch","Squat-to-Stand with T-Spine Opener" ]
     };
     function pickOneDifferent(region, lastMap){
       var pool = BODYWEIGHT_POOLS[region] || [];
       if(!pool.length) return "-";
       var last = lastMap ? lastMap[region] : null;
       var choice=null, tries=0;
-      do{
-        choice = pool[Math.floor(Math.random()*pool.length)];
-        tries++;
-        if(tries>10) break;
-      } while(last && choice===last);
+      do{ choice = pool[Math.floor(Math.random()*pool.length)]; tries++; if(tries>10) break; } while(last && choice===last);
       return choice;
     }
-
-    /* ====== Generators ====== */
-    function listEnabled(base, map){ return base.filter(function(x){ return (map && map[x.id] !== false); }); }
-    function weightedPick(list){
-      var weights = list.map(function(f){ return f.weight || 1; });
-      var sum = weights.reduce(function(a,b){ return a+b; }, 0);
-      var r = Math.random()*sum;
-      for (var i=0;i<list.length;i++){ r-=weights[i]; if(r<=0) return list[i]; }
-      return list[list.length-1];
-    }
-    function pickFormat(){
-      var enabledMap = lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED);
-      var pool = listEnabled(FORMATS, enabledMap);
-      if (pool.length===0) pool = [FORMATS.filter(function(f){return f.id==='single';})[0]];
-      var prev = lsGet(LS_PREV_FORMAT, null);
-      var pick = weightedPick(pool);
-      if (prev && pool.length>1 && pick.id===prev){
-        for (var i=0;i<pool.length;i++){ if(pool[i].id!==prev){ pick = pool[i]; break; } }
-      }
-      lsSet(LS_PREV_FORMAT, pick.id);
-      return pick;
-    }
-    function pickNoRepeatById(prevId, list) {
-      var pool = prevId ? list.filter(function(x){ return x.id!==prevId; }) : list.slice();
-      var src = pool.length ? pool : list;
-      return src[Math.floor(Math.random()*src.length)];
-    }
-    function pickDistinct(prev, arr) {
-      var pool = prev ? arr.filter(function(x){ return x!==prev; }) : arr.slice();
-      return (pool.length ? pool : arr)[Math.floor(Math.random()*(pool.length ? pool.length : arr.length))];
-    }
-    function pickExercise(pattern){
-      var list = PATTERNS[pattern].map(function(it){
-        var out = {}; for (var k in it){ out[k]=it[k]; }
-        if (!prefs.allowAdvanced && it.advanced && it.replacement){ out = { name: it.replacement, advanced:false, singleOnly:false, pullup:false }; }
-        if (!prefs.pullupBar && it.pullup && it.replacement){ out = { name: it.replacement, advanced:false, singleOnly:false, pullup:false }; }
-        out.singleOnly = SINGLE_ONLY.has(out.name) && !EXCEPT_ALLOW_DOUBLE.has(out.name);
-        return out;
-      });
-      var last = lsGet('rise_prev_ex_'+pattern, null);
-      var pool = list.filter(function(e){ return e.name!==last; });
-      var pick = (pool.length?pool:list)[Math.floor(Math.random()*(pool.length?pool.length:list.length))];
-      lsSet('rise_prev_ex_'+pattern, pick.name);
-      return pick;
-    }
-    function pickFinGroupNoRepeat(){
-      var last = localStorage.getItem(LS_FIN_GROUP) || null;
-      var groups = ['A','B','C'];
-      var pool = last ? groups.filter(function(g){ return g !== last; }) : groups.slice();
-      var choice = pool[Math.floor(Math.random()*pool.length)];
-      localStorage.setItem(LS_FIN_GROUP, choice);
-      return choice;
-    }
-    function pickBallisticFormat(){
-      var map = lsGet('rise:finABEnabled', DEFAULT_FIN_AB_ENABLED);
-      var pool = FIN_BALLISTIC_FORMATS.filter(function(f){ return map[f.id]!==false; });
-      var last = lsGet(LS_PREV_FINISHER_FMT, null);
-      var pick = pickNoRepeatById(last, pool.length?pool:FIN_BALLISTIC_FORMATS);
-      lsSet(LS_PREV_FINISHER_FMT, pick.id);
-      return pick;
-    }
-    function pickCarryFormat(){
-      var map = lsGet('rise:finCEnabled', DEFAULT_FIN_C_ENABLED);
-      var pool = CARRY_FORMATS.filter(function(f){ return map[f.id]!==false; });
-      var last = lsGet(LS_PREV_FINISHER_FMT, null);
-      var pick = pickNoRepeatById(last, pool.length?pool:CARRY_FORMATS);
-      lsSet(LS_PREV_FINISHER_FMT, pick.id);
-      return pick;
-    }
-    function chooseFinisherExercise(group){
-      var items = group==='A' ? FIN_A_ITEMS.slice() : FIN_B_ITEMS.slice();
-      var keyPrev = 'rise:prevFin_'+group;
-      var prevName = lsGet(keyPrev, null);
-      var pool = items.map(function(it){
-        if (!prefs.allowAdvanced && it.advanced && it.replacement) return { name: it.replacement };
-        return { name: it.name };
-      });
-      var poolNoRepeat = prevName ? pool.filter(function(x){ return x.name!==prevName; }) : pool.slice();
-      var pick = (poolNoRepeat.length?poolNoRepeat:pool)[Math.floor(Math.random()* (poolNoRepeat.length?poolNoRepeat.length:pool.length))];
-      lsSet(keyPrev, pick.name);
-      return pick.name;
-    }
-
-    /* ====== Recovery builders ====== */
     function generateKSPlan(){
       var steps = Object.keys(KS1);
-      var lines = ["Kalos Sthenos — ~10 min", "", "Perform 1 drill per step (1× 5–10 reps), then move on.", ""];
-      var selections = [];
-
-      // KS1
+      var lines = ["Kalos Sthenos — ~10 min","","Perform 1 drill per step (1× 5–10 reps), then move on.",""];
+      var selections=[];
       steps.forEach(function(step){
-        var list = KS1[step];
-        var lastIdx = lsGet('rise:ks1:last:'+step, null);
-        var idx = (function(list,lastIdx){ if(list.length<=1) return 0; var ii=Math.floor(Math.random()*list.length); if(lastIdx!=null && list.length>1 && ii===lastIdx){ ii=(ii+1)%list.length; } return ii; })(list,lastIdx);
-        var name = list[idx];
+        var list=KS1[step];
+        var lastIdx=lsGet('rise:ks1:last:'+step, null);
+        var idx=(function(list,lastIdx){ if(list.length<=1) return 0; var ii=Math.floor(Math.random()*list.length); if(lastIdx!=null && list.length>1 && ii===lastIdx){ ii=(ii+1)%list.length; } return ii; })(list,lastIdx);
+        var name=list[idx];
         selections.push({ group:'KS1', step: step, name: name, idx: idx });
         lines.push(step + ": " + name);
         lsSet('rise:ks1:last:'+step, idx);
       });
-
-      // KS2 (only if Advanced)
-      if (prefs.allowAdvanced) {
-        lines.push("", "Advanced (optional):", "");
+      if(prefs.allowAdvanced){
+        lines.push("","Advanced (optional):","");
         Object.keys(KS2).forEach(function(group){
-          var list = KS2[group];
-          var lastIdx = lsGet('rise:ks2:last:'+group, null);
-          var idx = (function(list,lastIdx){ if(list.length<=1) return 0; var ii=Math.floor(Math.random()*list.length); if(lastIdx!=null && list.length>1 && ii===lastIdx){ ii=(ii+1)%list.length; } return ii; })(list,lastIdx);
-        var name = list[idx];
-          selections.push({ group:'KS2', step: group, name: name, idx: idx });
+          var list=KS2[group];
+          var lastIdx=lsGet('rise:ks2:last:'+group, null);
+          var idx=(function(list,lastIdx){ if(list.length<=1) return 0; var ii=Math.random()*list.length|0; if(lastIdx!=null && list.length>1 && ii===lastIdx){ ii=(ii+1)%list.length; } return ii; })(list,lastIdx);
+          var name=list[idx];
+          selections.push({ group:'KS2', step:group, name:name, idx:idx });
           lines.push(group + ": " + name);
           lsSet('rise:ks2:last:'+group, idx);
         });
       }
-
-      return {
-        id: uuid(), program:'Rise', createdAt: nowISO(),
-        mode:'recovery',
-        gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0),
-        recovery: { main: lines, choice: 'Kalos Sthenos', ksSelections: selections }
-      };
+      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0), recovery:{ main:lines, choice:'Kalos Sthenos', ksSelections:selections } };
     }
     function buildGFMFlow(){
       var last = lsGet('rise:lastBodyFlow', null) || {};
-      var selections = {};
-      BW_REGIONS.forEach(function(region){
-        selections[region] = pickOneDifferent(region, last);
-      });
+      var selections={};
+      BW_REGIONS.forEach(function(region){ selections[region]=pickOneDifferent(region, last); });
       lsSet('rise:lastBodyFlow', selections);
       lsSet('rise:lastBodyFlowDate', nowISO());
-
-      var lines = ["Bodyweight Mobility Flow — ~10–15 min", "", "Perform 30–45s per drill. Breathe calm, move smooth.", ""];
-      BW_REGIONS.forEach(function(region){
-        lines.push(region + ": " + selections[region]);
-      });
-
-      return {
-        id: uuid(), program:'Rise', createdAt: nowISO(),
-        mode:'recovery',
-        gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0),
-        recovery: { main: lines, choice: 'Bodyweight Mobility Flow', selections: selections }
-      };
+      var lines=["Bodyweight Mobility Flow — ~10–15 min","","Perform 30–45s per drill. Breathe calm, move smooth.",""];
+      BW_REGIONS.forEach(function(region){ lines.push(region + ": " + selections[region]); });
+      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0), recovery:{ main:lines, choice:'Bodyweight Mobility Flow', selections: selections } };
     }
     function buildZone2(){
-      var lines = [
-        "Zone 2 — 30–45 min",
-        "",
-        "Conversational pace (talk test pass).",
-        "Pick one: brisk walk / bike / rower / light jog.",
-        "",
-        "Tips:",
-        "• Keep cadence steady, nasal breathing if possible.",
-        "• RPE ~4–5/10.",
-        "• Optional HR guide: ~70–80% of HRmax."
-      ];
-      return {
-        id: uuid(), program:'Rise', createdAt: nowISO(),
-        mode:'recovery',
-        gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0),
-        recovery: { main: lines, choice: 'Zone 2' }
-      };
+      var lines=["Zone 2 — 30–45 min","","Conversational pace (talk test pass).","Pick one: brisk walk / bike / rower / light jog.","","Tips:","• Keep cadence steady, nasal breathing if possible.","• RPE ~4–5/10.","• Optional HR guide: ~70–80% of HRmax."];
+      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0), recovery:{ main:lines, choice:'Zone 2' } };
     }
     function buildRecoverySession(kind){
       if(kind==='gfm') return buildGFMFlow();
@@ -812,315 +1293,94 @@
       return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', recovery:{ main:["Recovery"], choice:"Recovery"} };
     }
 
-    /* ====== YouTube thumbnails & demo helpers ====== */
-    function ytIdFromUrl(u){
-      try{
-        var url = new URL(u);
-        if (url.hostname.includes('youtu.be')) { return url.pathname.slice(1).split('/')[0]; }
-        if (url.pathname.startsWith('/shorts/')) { return url.pathname.split('/')[2] || null; }
-        var v = url.searchParams.get('v');
-        if (v) return v;
-        return null;
-      } catch(e){ return null; }
+    /* ===== Settings + toggles ===== */
+    function renderSettings(){
+      $('#s_pull').checked=!!prefs.pullupBar;
+      $('#s_adv').checked=!!prefs.allowAdvanced;
+      $('#s_autoFmt').checked=!!prefs.autoFormats;
+      $('#s_force28').checked=!!prefs.force28;
     }
-    function ytThumbFromUrl(u, quality){
-      if(!u) return null;
-      var id = ytIdFromUrl(u);
-      if(!id) return null;
-      var q = quality || 'hqdefault';
-      return 'https://img.youtube.com/vi/'+id+'/'+q+'.jpg';
-    }
-    function getThumbByName(name){
-      var key = (name === 'Farmer Carry') ? 'Suitcase Carry' : name; // fallback
-      var u = EX_URLS[key];
-      return ytThumbFromUrl(u, 'hqdefault');
-    }
-    function buildDemoHtmlFor(name){
-      var key = (name === 'Farmer Carry') ? 'Suitcase Carry' : name;
-      var url = EX_URLS[key];
-      return url ? '<a class="underline" href="'+url+'" target="_blank" rel="noopener">Bekijk demo ↗</a>' : '';
-    }
-
-    /* ====== Session builder ====== */
-    function renderPart1Text(){
-      var p1 = $('#p1Text');
-      if(!p1) return;
-      p1.innerHTML = '<ul class="list-disc ml-6 space-y-1">\
-        <li>10 minutes of quality Get-ups.</li>\
-        <li>Use the <strong>same bell</strong> as Part 2.</li>\
-        <li>Autoregulate:\
-          <div class="mt-1 text-xs muted">\
-            Progress over time → 3×1+1 • 4×1+1 • 5×1+1 • 1×2+2 + 4×1+1.\
-          </div>\
-        </li>\
-        <li class="mt-2 text-sm"><a class="underline" href="'+(EX_URLS["Get-ups"]||"#")+'" target="_blank" rel="noopener">Bekijk demo ↗</a></li>\
-      </ul>';
-    }
-
-    function generateRiseSession(){
-      var total = (+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
-      var mode = total>=11 ? 'full' : total>=9 ? 'short' : total>=5 ? 'recovery' : 'breathing';
-
-      if (mode==='recovery') return { id:uuid(), mode:mode, gate:total, createdAt:nowISO(), program:'Rise', pendingRecovery:true };
-      if (mode==='breathing'){
-        return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:mode, gate:total, breathing:{main:[
-          "Bottom Triangle Breathing",
-          "",
-          "Beginner: In 4s • Out 4s • Hold 4s (bottom)",
-          "Intermediate: In 4s • Out 6s • Hold 8s (bottom)",
-          "Advanced: In 6s • Out 8s • Hold 12s (bottom)",
-          "",
-          "Practice 5–20 minutes."
-        ]}};
+    function bindAllSwitches(){
+      var nodes = document.querySelectorAll('.switch > input[type="checkbox"]');
+      for (var i=0; i<nodes.length; i++){
+        (function(inp){
+          var wrap = inp.parentNode;
+          if(!wrap || !wrap.classList || !wrap.classList.contains('switch')) return;
+          if (wrap.__bound) return; wrap.__bound = true;
+          wrap.addEventListener('click', function(e){
+            if (e.target === inp) return;
+            inp.checked = !inp.checked;
+            var ev = new Event('change', { bubbles:true });
+            inp.dispatchEvent(ev);
+          });
+        })(nodes[i]);
       }
-
-      var fmt = pickFormat();
-      var patternKeys = Object.keys(PATTERNS).sort(function(){ return Math.random()-0.5; });
-      var part2 = patternKeys.map(function(p){ var ex = pickExercise(p); var obj={pattern:p}; for (var k in ex){ obj[k]=ex[k]; } return obj; });
-
-      var group = pickFinGroupNoRepeat();
-      var finisher = { group:group };
-      if (group==='A' || group==='B') {
-        var exercise = chooseFinisherExercise(group);
-        var ffmt = pickBallisticFormat();
-        finisher = { kind:'ballistic', group:group, exercise:exercise, format: ffmt };
-      } else {
-        var prevC  = lsGet('rise:prevCarry', null);
-        var raw    = (function(prev, arr){ var pool = prev ? arr.filter(function(x){ return x!==prev; }) : arr.slice(); return (pool.length?pool:arr)[Math.floor(Math.random()*(pool.length?pool.length:arr.length))]; })(prevC, CARRIES);
-        lsSet('rise:prevCarry', raw);
-        var cfmt   = pickCarryFormat();
-        var exercise2 = ((raw==='Suitcase Carry') && (cfmt.id==='c_double' || cfmt.id==='c_uneven')) ? 'Farmer Carry' : raw;
-        finisher = { kind:'carry', group:group, exercise:exercise2, format: cfmt };
-      }
-
-      return { id: uuid(), program:'Rise', createdAt:nowISO(), mode:mode, gate: total, format: fmt, part2: part2, finisher: finisher, bellLevel: bell };
     }
+    $('#s_pull').onchange = function(e){ prefs.pullupBar=e.target.checked; savePrefs(); };
+    $('#s_adv').onchange  = function(e){ prefs.allowAdvanced=e.target.checked; savePrefs(); };
+    $('#s_autoFmt').onchange = function(e){ prefs.autoFormats=e.target.checked; savePrefs(); toast('Formats (auto) setting saved.'); };
+    $('#s_force28').onchange = function(e){ prefs.force28=e.target.checked; savePrefs(); toast('28-day force test setting saved.'); };
 
-    /* ====== Persist current session (pin until Complete) ====== */
-    function loadCurrentSession(){ return lsGet('rise:current_session', null); }
-    function saveCurrentSession(s){ lsSet('rise:current_session', s); }
-    function clearCurrentSession(){ lsDel('rise:current_session'); }
+    function updateLevelUpButton(){ $('#btnProgLevelUp').disabled = !( $('#chkRep').checked && $('#chkWeight').checked ); }
+    $('#chkRep').onchange = updateLevelUpButton; $('#chkWeight').onchange = updateLevelUpButton;
+    $('#btnProgLevelUp').onclick = function(){
+      if(this.disabled) return;
+      setBell(bell+1);
+      toast('Level up! Bell increased.');
+      PILLAR.passWL=false; PILLAR.passRL=false; savePillar(); updateLevelUpButton();
+    };
 
-    /* ====== Render ====== */
-    var currentSession = null;
+    /* ===== Tabs ===== */
+    $all('.tab-btn').forEach(function(b){
+      b.onclick=function(){
+        var name=b.getAttribute('data-tab');
+        ['train','recovery','history','settings'].forEach(function(t){
+          var el=$('#tab-'+t);
+          if(el) el.classList.toggle('hidden', t!==name);
+          var btn=document.querySelector('[data-tab="'+t+'"]');
+          if(btn){ if(t===name) btn.classList.add('active'); else btn.classList.remove('active'); }
+        });
+        if(name==='history') renderHistory();
+        if(name==='settings'){ renderSettings(); bindAllSwitches(); reflectBell(); }
+        if(name==='recovery'){
+          var saved=lsGet('rise:current_session', null);
+          if(saved && saved.mode==='recovery') renderRecoveryPreview($('#recPreview'), saved);
+        }
+      };
+    });
 
-    function renderPart1(){
-      var hide = currentSession && (currentSession.mode==='breathing' || currentSession.mode==='recovery');
-      var p1 = $('#part1');
-      if(p1) p1.style.display = hide ? 'none' : '';
-      if(!hide) renderPart1Text();
-    }
-
-function renderPart2(s){
-  var host = $('#p2List'); var meta2 = $('#meta2'); if(!host) return;
-  try{
-    if (s.mode==='breathing'){
-      if(meta2) meta2.textContent = '—';
-      host.innerHTML = (s.breathing.main||[]).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
-      return;
-    }
-    if (s.mode==='recovery'){
-      if(meta2) meta2.textContent = s.recovery && s.recovery.choice ? ('Pinned: '+s.recovery.choice) : '—';
-      host.innerHTML = (s.recovery && s.recovery.main || []).map(function(l){ return '<p class="text-sm">'+l+'</p>'; }).join('');
-      return;
-    }
-    var twoBells = s.format && (s.format.id==='double' || s.format.id==='uneven');
-    var fmtObj = null; for (var i=0;i<FORMATS.length;i++){ if(FORMATS[i].id===s.format.id){ fmtObj=FORMATS[i]; break; } }
-    if(meta2) meta2.textContent = fmtObj ? fmtObj.label : (s.format && s.format.meta ? s.format.meta : '');
-    var list = Array.isArray(s.part2) ? s.part2 : [];
-
-    host.innerHTML = list.map(function(item){
-      var showTriangle = twoBells && item.singleOnly;
-      var badge = showTriangle ? '<span class="marker text-amber-600"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
-      var demo = buildDemoHtmlFor(item.name);
-      var thumb = getThumbByName(item.name);
-
-      return ''+
-      '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
-        '<div class="flex items-start gap-2">'+
-          '<div class="grow">'+
-            '<div class="text-xs muted mb-1">'+(item.pattern||'')+'</div>'+
-            '<div class="font-medium">'+(item.name||'—')+'</div>'+
-            '<div class="mt-1">'+badge+'</div>'+
-          '</div>'+
-          '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
-        '</div>'+
-        '<div class="disclosure max-h-0 mt-2" data-body>'+
-          (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(item.name||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
-          (demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+
-        '</div>'+
-      '</article>';
-    }).join('');
-  }catch(e){
-    host.innerHTML = '<p class="text-sm text-red-600">Kon Part 2 niet renderen.</p>';
-  }
-}
-function renderPart3(s){
-  var host = $('#p3List'); var meta3 = $('#meta3'); if(!host) return;
-  try{
-    if (s.mode==='breathing' || s.mode==='recovery'){ if(meta3) meta3.textContent=''; host.innerHTML=''; return; }
-
-    if (s.finisher && s.finisher.kind === 'ballistic') {
-      var fmt = null; for (var i=0;i<FIN_BALLISTIC_FORMATS.length;i++){ if(FIN_BALLISTIC_FORMATS[i].id===s.finisher.format.id){ fmt=FIN_BALLISTIC_FORMATS[i]; break; } }
-      if(meta3) meta3.textContent = fmt ? fmt.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-      var demo = buildDemoHtmlFor(s.finisher.exercise);
-      var thumb = getThumbByName(s.finisher.exercise);
-
-      host.innerHTML =
-        '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
-          '<div class="flex items-start gap-2">'+
-            '<div class="grow">'+
-              '<div class="text-xs muted mb-1">Ballistic ('+(s.finisher.group==='A'?'Anterior':'Posterior')+')</div>'+
-              '<div class="font-medium">'+(s.finisher.exercise||'—')+'</div>'+
-            '</div>'+
-            '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
-          '</div>'+
-          '<div class="disclosure max-h-0 mt-2" data-body>'+
-            (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
-            (demo ? '<div class="mt-2 text-sm">'+demo+'</div>' : '')+
-          '</div>'+
-        '</article>';
-    } else {
-      var fmt2 = null; for (var j=0;j<CARRY_FORMATS.length;j++){ if(CARRY_FORMATS[j].id===s.finisher.format.id){ fmt2=CARRY_FORMATS[j]; break; } }
-      if(meta3) meta3.textContent = fmt2 ? fmt2.label : (s.finisher.format && s.finisher.format.meta ? s.finisher.format.meta : '');
-      var demo2 = buildDemoHtmlFor(s.finisher.exercise);
-      var thumb2 = getThumbByName(s.finisher.exercise);
-
-      host.innerHTML =
-        '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
-          '<div class="flex items-start gap-2">'+
-            '<div class="grow">'+
-              '<div class="text-xs muted mb-1">Carry (Group C)</div>'+
-              '<div class="font-medium">'+(s.finisher.exercise||'—')+'</div>'+
-            '</div>'+
-            '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
-          '</div>'+
-          '<div class="disclosure max-h-0 mt-2" data-body>'+
-            (thumb2 ? '<div class="media"><img src="'+thumb2+'" alt="'+(s.finisher.exercise||'')+' demo" loading="lazy" decoding="async"></div>' : '')+
-            (demo2 ? '<div class="mt-2 text-sm">'+demo2+'</div>' : '')+
-          '</div>'+
-        '</article>';
-    }
-  }catch(e){
-    host.innerHTML = '<p class="text-sm text-red-600">Kon Part 3 niet renderen.</p>';
-  }
-}
-
-
-    function renderShortUI(){
-      var banner = $('#shortBanner');
-      var isShort = currentSession && currentSession.mode==='short';
-      if (!banner) return;
-      if (isShort){
-        banner.classList.remove('hidden');
-        banner.innerHTML = '<div class="mode-short-banner rounded-xl p-3">\
-          <div class="font-semibold">Short Session (5/1/5)</div>\
-          <div class="text-sm">Part 1: 5 min Get-ups • Part 2: 1 quality round • Part 3: short carry — single-bell.</div>\
-        </div>';
-      } else banner.classList.add('hidden');
-    }
-    function renderRecoveryPreview(node, rec){
-      if(!node) return;
-      var lines = (rec.recovery && rec.recovery.main) ? rec.recovery.main : [];
-      node.innerHTML = lines.map(function(l){ return '<p>'+(l?l:'&nbsp;')+'</p>'; }).join('');
-    }
-    function renderSession(s){
-      currentSession = s;
-      var st = $('#sessTitle'); if(st) st.textContent = 'Session — '+fmtDate(new Date(s.createdAt||nowISO()));
-      reflectBell();
-      renderPart1(); renderPart2(s); renderPart3(s); renderShortUI();
-      var recTabVisible = $('#tab-recovery') && !$('#tab-recovery').classList.contains('hidden');
-      if (recTabVisible && s.mode==='recovery') renderRecoveryPreview($('#recPreview'), s);
-
-      // persist current session (pin until complete)
-      saveCurrentSession(s);
-    }
-
-    /* ====== History & exports ====== */
-    function renderHistory(){
-      var hist = lsGet('rise:history', []);
-      var host = $('#histList');
-      if(!host) return;
-      if(hist.length===0){ host.innerHTML = '<p class="text-sm muted">Empty.</p>'; return; }
-      var rows = hist.slice().reverse().map(function(h){
-        var s = h.session || {};
-        var f2 = s.format ? ( (FORMATS.filter(function(f){return f.id===s.format.id;})[0] || {}).label || s.format.meta ) : '';
-        var f3 = (s.finisher && s.finisher.format) ? (
-          s.finisher.kind==='ballistic'
-            ? ( (FIN_BALLISTIC_FORMATS.filter(function(f){return f.id===s.finisher.format.id;})[0] || {}).label || s.finisher.format.meta )
-            : ( (CARRY_FORMATS.filter(function(f){return f.id===s.finisher.format.id;})[0] || {}).label || s.finisher.format.meta )
-        ) : '';
-        return '<div class="py-2 hist-row">\
-          <div class="text-sm"><strong>'+new Date(h.saved_at).toLocaleString()+'</strong> • '+(s.mode||'full')+' • Bell L'+(s.bellLevel||bell)+'</div>\
-          <div class="text-xs mt-1">'+f2+(f2 && f3 ? ' — ' : '')+f3+'</div>'
-          +(s.part2 ? '<div class="text-xs mt-1">'+s.part2.map(function(it){return it.pattern+': '+it.name;}).join(' • ')+'</div>' : '')+
-          (s.recovery && s.recovery.choice ? '<div class="text-xs mt-1">Recovery: '+s.recovery.choice+'</div>' : '')
-          +'</div>';
+    /* ===== Recovery modal logic ===== */
+    var SCALE = {
+      sleep: [ "0 – Barely slept, not recovered","1 – Very poor, broken sleep","2 – Restless, short, not refreshed","3 – Okay, enough to get by","4 – Good, rested","5 – Excellent, fully recovered" ],
+      energy:[ "0 – No energy at all","1 – Very low","2 – Low, sluggish","3 – Okay, manageable","4 – Good, energetic","5 – Excellent, buzzing" ],
+      body:  [ "0 – Severe pain/injury","1 – Major stiffness/pain","2 – Noticeable stiffness","3 – Slight stiffness/fatigue","4 – Good, minimal limitations","5 – Excellent, loose & strong" ]
+    };
+    function buildScale(key, into, descInto, val){
+      into.innerHTML = SCALE[key].map(function(_,i){
+        return '<button class="scale-btn" data-v="'+i+'">'+i+'</button>';
       }).join('');
-      host.innerHTML = rows;
+      into.onclick = function(e){
+        var b = e.target.closest ? e.target.closest('button.scale-btn') : null; if(!b) return;
+        var v = parseInt(b.getAttribute('data-v'),10);
+        if (key==='sleep') prefs.recSleep=v; else if (key==='energy') prefs.recEnergy=v; else prefs.recBody=v;
+        savePrefs();
+        var btns = into.querySelectorAll('button.scale-btn');
+        for (var k=0; k<btns.length; k++){
+          var isOn = parseInt(btns[k].getAttribute('data-v'),10)===v;
+          btns[k].classList.toggle('active', isOn);
+        }
+        descInto.textContent=SCALE[key][v];
+        updateRecSummary();
+      };
+      if (val!=null){ var pre = into.querySelector('[data-v="'+val+'"]'); if (pre){ pre.click(); } }
     }
-    function exportJSON(){
-      var hist = lsGet('rise:history', []);
-      var blob = new Blob([JSON.stringify(hist,null,2)], {type:"application/json"});
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a'); a.href=url; a.download='rise-history.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    function updateRecSummary(){
+      var s=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
+      $('#sTotal').textContent=s;
+      $('#sDecision').textContent = s>=11 ? 'Train (full session)' : s>=9 ? 'Short session (Part 1+2)' : 'Recovery (Part 1 only)';
     }
-    function toCSV(rows){
-      function esc(v){ v = (v==null?'':String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
-      var header = ["saved_at","mode","bellLevel","format2","format3","part2","recovery"];
-      var out = [header.join(",")];
-      rows.forEach(function(h){
-        var s=h.session||{};
-        var f2 = s.format ? ( (FORMATS.filter(function(f){return f.id===s.format.id;})[0] || {}).label || s.format.meta ) : '';
-        var f3 = (s.finisher && s.finisher.format) ? (
-          s.finisher.kind==='ballistic'
-            ? ( (FIN_BALLISTIC_FORMATS.filter(function(f){return f.id===s.finisher.format.id;})[0] || {}).label || s.finisher.format.meta )
-            : ( (CARRY_FORMATS.filter(function(f){return f.id===s.finisher.format.id;})[0] || {}).label || s.finisher.format.meta )
-        ) : '';
-        out.push([
-          h.saved_at || "",
-          s.mode || "",
-          s.bellLevel || "",
-          f2,
-          f3,
-          (s.part2||[]).map(function(it){return it.pattern+': '+it.name;}).join(" | "),
-          (s.recovery && s.recovery.choice) ? s.recovery.choice : ""
-        ].map(esc).join(","));
-      });
-      return out.join("\n");
-    }
-    function exportCSV(){
-      var hist = lsGet('rise:history', []);
-      var csv = toCSV(hist);
-      var blob = new Blob([csv], {type:"text/csv"});
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-
-    /* ====== Hard reset ====== */
-    function hardReset(){
-      lsSet('rise:history', []);
-      setBell(1);
-      lsDel('rise_prev_format_v1');
-      lsDel('rise:prevFin_A'); lsDel('rise:prevFin_B');
-      lsDel('rise:prevFinisher_fmt_v1'); // legacy
-      lsDel('rise:prev_finisher_fmt_v1');
-      lsDel('rise:prevCarry');
-      lsDel('rise:current_session');           // clear pinned
-      Object.keys(PATTERNS).forEach(function(p){ lsDel('rise_prev_ex_'+p); });
-      lsDel('rise:lastBodyFlow'); lsDel('rise:lastBodyFlowDate');
-      Object.keys(KS1).forEach(function(k){ lsDel('rise:ks1:last:'+k); });
-      Object.keys(KS2).forEach(function(k){ lsDel('rise:ks2:last:'+k); });
-    }
-
-    /* ====== Dialog instances ====== */
-    var recDlg = makePolyfill($('#recModal'));
-    var recChoiceDlg = makePolyfill($('#recChoice'));
-    var progDlg = makePolyfill($('#progModal'));
-
-    /* ====== Events ====== */
+    var recDlg=(function(){ var el=$('#recModal'); return { open:function(){ if(el && el.showModal) el.showModal(); }, close:function(){ if(el && el.close) el.close(); } }; })();
     $('#btnGenerate').onclick = function(){
-      // open recovery scale modal
       buildScale('sleep',$('#sSleep'),$('#sSleepDesc'),prefs.recSleep);
       buildScale('energy',$('#sEnergy'),$('#sEnergyDesc'),prefs.recEnergy);
       buildScale('body',$('#sBody'),$('#sBodyDesc'),prefs.recBody);
@@ -1130,234 +1390,41 @@ function renderPart3(s){
     $('#recCancel').onclick = function(){ recDlg.close(); };
     $('#recConfirm').onclick = function(){
       recDlg.close();
-      var s = generateRiseSession();
-
-      if (s.pendingRecovery){
-        recChoiceDlg.open();
-        var handler = function(e){
-          var btn = e.target.closest ? e.target.closest('button[data-recov]') : null;
-          if(!btn) return;
-          recChoiceDlg.close();
-          var kind = btn.getAttribute('data-recov');
-          var pinned = buildRecoverySession(kind);
-          renderSession(pinned);
-          renderRecoveryPreview($('#recPreview'), pinned);
-          toast((pinned.recovery && pinned.recovery.choice ? pinned.recovery.choice : 'Recovery') + ' pinned.');
-          document.removeEventListener('click', handler);
-        };
-        document.addEventListener('click', handler, { once:true });
-        return;
-      }
-
-      if (s.mode==='breathing'){
-        renderSession(s);
-        toast('Breathing pinned.');
-        return;
-      }
-
+      var s=generateSession();
       renderSession(s);
       toast('Session generated.');
     };
 
-    $('#btnComplete').onclick = function(){
-      if(!currentSession){ toast('No session to complete.'); return; }
-
-      // Auto progression check — ONLY on Complete
-      var shouldAsk = false, q = '';
-      if(currentSession.part2 && currentSession.format){
-        var hasMP = currentSession.part2.some(function(it){ return it.name==='Military Press'; });
-        if(hasMP && currentSession.format.id==='repLadder'){
-          shouldAsk = true; q = "Military Press • Rep Ladder 1–2–3–4–5 — completed all rungs per arm?";
-        } else if (hasMP && currentSession.format.id==='weightLadder'){
-          shouldAsk = true; q = "Military Press • Weight Ladder (5 @ Heavy) — 5 solid reps per arm?";
-        }
-      }
-
-      function saveAndToast(){
-        var hist = lsGet('rise:history', []);
-        hist.push({ saved_at: nowISO(), session: currentSession });
-        lsSet('rise:history', hist);
-        clearCurrentSession(); // unpin after saving
-        toast('Session saved to history.');
-      }
-
-      if(shouldAsk){
-        $('#progQuestion').textContent = q;
-        progDlg.open();
-        $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
-        $('#progYes').onclick = function(){ setBell(bell+1); progDlg.close(); toast('Great! Level up.'); saveAndToast(); };
-      } else {
-        saveAndToast();
-      }
-    };
-
-    // Recovery quick actions (buttons in Recovery tab)
-    $('#btnRecGFM').onclick = function(){
-      var s = buildGFMFlow(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
-      toast('Bodyweight Mobility Flow pinned.');
-    };
-    $('#btnRecKS').onclick  = function(){
-      var s = generateKSPlan(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
-      toast('Kalos Sthenos pinned.');
-    };
-    $('#btnRecZ2').onclick  = function(){
-      var s = buildZone2(); renderSession(s); renderRecoveryPreview($('#recPreview'), s);
-      toast('Zone 2 pinned.');
-    };
-
-    // Manual progression (Settings)
-    function updateLevelUpButton(){
-      var ok = ($('#chkRep').checked && $('#chkWeight').checked);
-      $('#btnProgLevelUp').disabled = !ok;
-    }
-    $('#chkRep').onchange = updateLevelUpButton;
-    $('#chkWeight').onchange = updateLevelUpButton;
-    $('#btnProgLevelUp').onclick = function(){
-      if(this.disabled) return;
-      setBell(bell+1);
-      toast('Level up! Bell increased.');
-    };
-
-    // Tabs
-    $all('.tab-btn').forEach(function(b){
-      b.onclick = function(){
-        var name=b.getAttribute('data-tab');
-        ['train','recovery','history','settings'].forEach(function(t){
-          var el = $('#tab-'+t);
-          if(el) el.classList.toggle('hidden', t!==name);
-          var btn = document.querySelector('[data-tab="'+t+'"]');
-          if(btn){ if(t===name) btn.classList.add('active'); else btn.classList.remove('active'); }
-        });
-        if(name==='history') renderHistory();
-        if(name==='settings'){ renderFormatsSettings(); renderFinABSettings(); renderFinCSettings(); reflectBell(); }
-      };
+    /* ===== Quick Recovery (tab buttons) ===== */
+    document.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('#btnRecGFM,#btnRecKS,#btnRecZ2') : null;
+      if(!b) return;
+      var kind = b.id==='btnRecGFM' ? 'gfm' : b.id==='btnRecKS' ? 'ks' : 'zone2';
+      var s = buildRecoverySession(kind);
+      lsSet('rise:current_session', s);
+      renderSession(s);
+      if(!$('#tab-recovery').classList.contains('hidden')) renderRecoveryPreview($('#recPreview'), s);
+      toast((s.recovery && s.recovery.choice ? s.recovery.choice : 'Recovery') + ' pinned.');
     });
 
-    // Settings checklists
-    function renderFormatsSettings(){
-      var map = lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED);
-      var host = $('#fmtPart2'); if(!host) return;
-      host.innerHTML = FORMATS.map(function(f){
-        var checked = map[f.id]!==false;
-        return '<label><span>'+f.label+'</span><input type="checkbox" data-k="'+f.id+'" '+(checked?'checked':'')+'></label>';
-      }).join('');
-      host.onchange = function(e){
-        var cb = e.target.closest ? e.target.closest('input[type="checkbox"]') : null; if(!cb) return;
-        var k = cb.getAttribute('data-k');
-        var next = lsGet('rise:fmtEnabled', DEFAULT_FMT_ENABLED); next[k] = cb.checked; setFmtEnabled(next); toast('Formats saved.');
-      };
-    }
-    function renderFinABSettings(){
-      var map = lsGet('rise:finABEnabled', DEFAULT_FIN_AB_ENABLED);
-      var host = $('#fmtFinAB'); if(!host) return;
-      host.innerHTML = FIN_BALLISTIC_FORMATS.map(function(f){
-        var checked = map[f.id]!==false;
-        return '<label><span>'+f.label+'</span><input type="checkbox" data-k="'+f.id+'" '+(checked?'checked':'')+'></label>';
-      }).join('');
-      host.onchange = function(e){
-        var cb = e.target.closest ? e.target.closest('input[type="checkbox"]') : null; if(!cb) return;
-        var k = cb.getAttribute('data-k');
-        var next = lsGet('rise:finABEnabled', DEFAULT_FIN_AB_ENABLED); next[k] = cb.checked; setFinABEnabled(next); toast('Finisher A/B formats saved.');
-      };
-    }
-    function renderFinCSettings(){
-      var map = lsGet('rise:finCEnabled', DEFAULT_FIN_C_ENABLED);
-      var host = $('#fmtFinC'); if(!host) return;
-      host.innerHTML = CARRY_FORMATS.map(function(f){
-        var checked = map[f.id]!==false;
-        return '<label><span>'+f.label+'</span><input type="checkbox" data-k="'+f.id+'" '+(checked?'checked':'')+'></label>';
-      }).join('');
-      host.onchange = function(e){
-        var cb = e.target.closest ? e.target.closest('input[type="checkbox"]') : null; if(!cb) return;
-        var k = cb.getAttribute('data-k');
-        var next = lsGet('rise:finCEnabled', DEFAULT_FIN_C_ENABLED); next[k] = cb.checked; setFinCEnabled(next); toast('Finisher C formats saved.');
-      };
-    }
-
-    // Disclosure (tap to open demo links)
-document.addEventListener('click', function(e){
-  var card = e.target.closest && e.target.closest('[data-desc]'); if(!card) return;
-  var body = card.querySelector('[data-body]'); if(!body) return;
-
-  var willOpen = !(card.getAttribute('data-open') === 'true');
-  card.setAttribute('data-open', willOpen ? 'true' : 'false');
-  card.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-
-  // plus ↔ minus
-  var chev = card.querySelector('.chev');
-  if (chev) chev.textContent = willOpen ? '–' : '+';
-
-  if (willOpen) {
-    body.style.maxHeight = body.scrollHeight + 'px';
-    // als de afbeelding nog laadt → na load hoogte opnieuw instellen
-    var img = body.querySelector('img');
-    if (img && !img.complete) {
-      img.addEventListener('load', function onL(){
-        body.style.maxHeight = body.scrollHeight + 'px';
-        img.removeEventListener('load', onL);
-      });
-    }
-  } else {
-    body.style.maxHeight = '0px';
-  }
-});
-    // Recovery scale helpers
-    var SCALE = {
-      sleep: [ "0 – Barely slept, not recovered","1 – Very poor, broken sleep","2 – Restless, short, not refreshed","3 – Okay, enough to get by","4 – Good, rested","5 – Excellent, fully recovered" ],
-      energy:[ "0 – No energy at all","1 – Very low","2 – Low, sluggish","3 – Okay, manageable","4 – Good, energetic","5 – Excellent, buzzing" ],
-      body:  [ "0 – Severe pain/injury","1 – Major stiffness/pain","2 – Noticeable stiffness","3 – Slight stiffness/fatigue","4 – Good, minimal limitations","5 – Excellent, loose & strong" ]
-    };
-    function buildScale(key, into, descInto, val){
-      into.innerHTML = SCALE[key].map(function(_,i){ return '<button class="scale-btn" data-v="'+i+'">'+i+'</button>'; }).join('');
-      into.onclick = function(e){
-        var b = e.target.closest && e.target.closest('button'); if(!b) return;
-        var v = parseInt(b.getAttribute('data-v'),10);
-        if (key==='sleep') prefs.recSleep=v; else if (key==='energy') prefs.recEnergy=v; else prefs.recBody=v;
-        savePrefs();
-        $all('#'+into.id+' button').forEach(function(btn){
-          var on = parseInt(btn.getAttribute('data-v'),10)===v;
-          btn.classList.toggle('active', on);
-        });
-        descInto.textContent = SCALE[key][v];
-        updateRecSummary();
-      };
-      if (val!=null) { var btn = into.querySelector('[data-v="'+val+'"]'); if(btn) btn.click(); }
-    }
-    function updateRecSummary(){
-      var s=(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0);
-      var sTotal=$('#sTotal'), sDecision=$('#sDecision');
-      if(sTotal) sTotal.textContent = s;
-      if(sDecision) sDecision.textContent = s>=11 ? 'Train (full session)' : s>=9 ? 'Short session (5/1/5)' : s>=5 ? 'Recovery' : 'Breathing';
-    }
-
-    // Dark toggle
-    function setDarkLabel(){ var isDark=document.documentElement.classList.contains('dark'); var b=$('#btnDark'); if(b) b.textContent=isDark?'Light':'Dark'; }
-    $('#btnDark').onclick=function(){ document.documentElement.classList.toggle('dark'); prefs.dark=document.documentElement.classList.contains('dark'); savePrefs(); setDarkLabel(); };
-
-    // Boot
+    /* ===== Boot ===== */
     (function boot(){
-      if (prefs.dark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
-      setDarkLabel();
-      reflectBell();
-      renderPart1Text();
-      var st=$('#sessTitle'); if(st) st.textContent='Session — '+fmtDate(new Date());
-      if($('#s_pull')) $('#s_pull').checked = !!prefs.pullupBar;
-      if($('#s_adv'))  $('#s_adv').checked  = !!prefs.allowAdvanced;
-
-      // Herstel gepinde sessie (pin until complete)
-      var saved = loadCurrentSession();
-      if (saved) { renderSession(saved); }
+      if(prefs.dark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+      setDarkLabel(); reflectBell();
+      renderSettings(); bindAllSwitches();
+      var saved=lsGet('rise:current_session', null);
+      if(saved) renderSession(saved);
+      else {
+        // first run prompt
+        buildScale('sleep',$('#sSleep'),$('#sSleepDesc'),prefs.recSleep);
+        buildScale('energy',$('#sEnergy'),$('#sEnergyDesc'),prefs.recEnergy);
+        buildScale('body',$('#sBody'),$('#sBodyDesc'),prefs.recBody);
+        updateRecSummary(); recDlg.open();
+      }
+      // preload p1 demo
+      var p1u=EX_URLS['Get-ups']; var p1t=p1u? ytThumbFromUrl(p1u,'hqdefault'):null;
+      if(p1t) $('#p1Img').src=p1t; if(p1u) $('#p1Demo').href=p1u;
     })();
-
-    // Exports + clear
-    $('#btnExportJSON').onclick=exportJSON;
-    $('#btnExportCSV').onclick=exportCSV;
-    $('#btnClearHist').onclick=function(){
-      hardReset();
-      toast('All data cleared. Bell reset to L1.');
-      renderHistory();
-      reflectBell();
-    };
   })();
   </script>
 </body>
