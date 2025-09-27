@@ -920,23 +920,31 @@ $('#part3').style.display = onlyPart1 ? 'none' : '';
 if (s.mode!=='recovery' && s.mode!=='ks') {
   $('#meta2').textContent = s.format ? ('Format: ' + (s.format.label || '—')) : '—';
   $('#p2Timer').textContent = (s.format && s.format.id==='timed') ? '▶ Start Timed' : '▶ 25-min timer';
-  $('#p2List').innerHTML = (s.part2||[]).map(function(it){
-    var badge = (s.format && (s.format.id==='double' || s.format.id==='uneven') && it.singleOnly)
-      ? '<span class="marker text-amber-500"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
-    var demoURL=EX_URLS[it.name]; 
-    var thumb=demoURL? ytThumbFromUrl(demoURL,'hqdefault'):null;
-    return ''+
-    '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
-      '<div class="flex items-start gap-2">'+
-        '<div class="grow">'+
-          '<div class="text-xs muted mb-1">'+(it.pattern||'')+'</div>'+
-          '<div class="font-medium">'+(it.name||'—')+'</div>'+
-          '<div class="mt-1">'+badge+'</div>'+
-        '</div>'+
-        (thumb? '<a href="'+demoURL+'" target="_blank"><img class="thumb" src="'+thumb+'"></a>' : '')+
+ $('#p2List').innerHTML = (s.part2||[]).map(function(it){
+  var badge = (s.format && (s.format.id==='double' || s.format.id==='uneven') && it.singleOnly)
+    ? '<span class="marker text-amber-500"><span class="triangle"></span><span>Single-bell only</span></span>' : '';
+
+  var demoURL = EX_URLS[it.name];
+  var thumb   = demoURL ? ytThumbFromUrl(demoURL,'hqdefault') : null;
+
+  return ''+
+  '<article class="p-3 rounded-lg card card-click" data-desc role="button" tabindex="0" aria-expanded="false" data-open="false">'+
+    '<div class="flex items-start gap-2">'+
+      '<div class="grow">'+
+        '<div class="text-xs muted mb-1">'+(it.pattern||'')+'</div>'+
+        '<div class="font-medium">'+(it.name||'—')+'</div>'+
+        '<div class="mt-1">'+badge+'</div>'+
       '</div>'+
-    '</article>';
-  }).join('');
+      // toggle button (belangrijk voor de click-handler)
+      '<button class="ml-2 text-sm chev-btn" aria-label="Toggle details"><span class="chev">+</span></button>'+
+    '</div>'+
+    // ingeklapte body
+    '<div class="disclosure max-h-0 mt-2" data-body>'+
+      (thumb ? '<div class="media"><img src="'+thumb+'" alt="'+(it.name||"")+' demo" loading="lazy" decoding="async"></div>' : '')+
+      (demoURL ? '<div class="mt-2 text-sm"><a class="underline" href="'+demoURL+'" target="_blank" rel="noopener">Bekijk demo ↗</a></div>' : '')+
+    '</div>'+
+  '</article>';
+}).join('');
 } else {
   // niks tonen bij recovery of ks
 }
@@ -1487,3 +1495,4 @@ function updateRecSummary(){
   </script>
 </body>
 </html>
+
