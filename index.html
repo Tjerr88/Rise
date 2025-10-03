@@ -690,32 +690,51 @@ var CARRY_TEXT = {
   c_timed:    'Format: Carry — Continuous max effort for 10 minutes (no rest). Bell down = session finished (single effort)'
 };
 
-    /* ===== Pillars / Progression ===== */
-    var PILLAR = {
-      lastWL: lsGet('rise:pillar:lastWL', null),
-      lastRL: lsGet('rise:pillar:lastRL', null),
-      passWL: lsGet('rise:pillar:passWL', false),
-      passRL: lsGet('rise:pillar:passRL', false)
-    };
-    function savePillar(){ lsSet('rise:pillar:lastWL', PILLAR.lastWL); lsSet('rise:pillar:lastRL', PILLAR.lastRL); lsSet('rise:pillar:passWL', PILLAR.passWL); lsSet('rise:pillar:passRL', PILLAR.passRL); }
-    function isoToday(){ return new Date().toISOString().slice(0,10); }
-    function daysBetween(a,b){ if(!a||!b) return Infinity; return Math.floor((new Date(b)-new Date(a))/86400000); }
-    function whichOverdue28(){
-      var dsWL=daysBetween(PILLAR.lastWL, isoToday());
-      var dsRL=daysBetween(PILLAR.lastRL, isoToday());
-      var over=[];
-      if(dsWL>=28) over.push({k:'WL',ds:dsWL});
-      if(dsRL>=28) over.push({k:'RL',ds:dsRL});
-      if(!over.length) return null; over.sort(function(a,b){return b.ds-a.ds;}); return over[0].k;
-    }
-    function tryPromoteGoldilocks(){
-      if(PILLAR.passWL && PILLAR.passRL){
-        setBell(bell+1);
-        toast('🎉 Goldilocks up! (both pillars passed)');
-        PILLAR.passWL=false; PILLAR.passRL=false; savePillar();
-      }
-    }
+ /* ===== Pillars / Progression ===== */
+var PILLAR = {
+  lastWL:    lsGet('rise:pillar:lastWL', null),
+  lastRL:    lsGet('rise:pillar:lastRL', null),
+  passWL:    lsGet('rise:pillar:passWL', false),
+  passRL:    lsGet('rise:pillar:passRL', false),
+  // NIEUW: start van de 28-dagen klok = eerste keer dat je een sessie opslaat
+  firstSave: lsGet('rise:pillar:firstSave', null)
+};
+function savePillar(){
+  lsSet('rise:pillar:lastWL', PILLAR.lastWL);
+  lsSet('rise:pillar:lastRL', PILLAR.lastRL);
+  lsSet('rise:pillar:passWL', PILLAR.passWL);
+  lsSet('rise:pillar:passRL', PILLAR.passRL);
+  lsSet('rise:pillar:firstSave', PILLAR.firstSave);
+}
+function isoToday(){ return new Date().toISOString().slice(0,10); }
+function daysBetween(a,b){ if(!a||!b) return Infinity; return Math.floor((new Date(b)-new Date(a))/86400000); }
 
+// AANGEPAST: pas 28-dagen pushen ná de eerste save.
+// Basisdatum per pilaar = laatste testdatum; als die er niet is, firstSave.
+function whichOverdue28(){
+  if(!PILLAR.firstSave) return null; // nog nooit opgeslagen → niet pushen
+  var baseWL = PILLAR.lastWL || PILLAR.firstSave;
+  var baseRL = PILLAR.lastRL || PILLAR.firstSave;
+
+  var dsWL = daysBetween(baseWL, isoToday());
+  var dsRL = daysBetween(baseRL, isoToday());
+
+  var over=[];
+  if(dsWL >= 28 && !PILLAR.passWL) over.push({k:'WL', ds:dsWL});
+  if(dsRL >= 28 && !PILLAR.passRL) over.push({k:'RL', ds:dsRL});
+
+  if(!over.length) return null;
+  over.sort(function(a,b){ return b.ds - a.ds; });
+  return over[0].k; // meest overdue eerst
+}
+
+function tryPromoteGoldilocks(){
+  if(PILLAR.passWL && PILLAR.passRL){
+    setBell(bell+1);
+    toast('🎉 Goldilocks up! (both pillars passed)');
+    PILLAR.passWL=false; PILLAR.passRL=false; savePillar();
+  }
+}
     /* ===== Session Generation ===== */
     function listEnabledFrom(pattern){
       return PATTERNS[pattern].map(function(it){
@@ -1216,14 +1235,29 @@ $('#p3Timer').onclick = async function(){
     function exportCSV(){ var hist=lsGet('rise:history', []); var csv=toCSV(hist); var blob=new Blob([csv], {type:'text/csv'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
     $('#btnExportJSON').onclick=exportJSON;
     $('#btnExportCSV').onclick=exportCSV;
-    $('#btnClearHist').onclick=function(){
+    $('$('#btnClearHist').onclick=function(){
+  lsSet('rise:history', []);
+  setBell(1);
+  lsDel('rise:current_session');
+
+  // NIEUW: pilaren + klok volledig resetten
+  PILLAR.lastWL = null;
+  PILLAR.lastRL = null;
+  PILLAR.passWL = false;
+  PILLAR.passRL = false;
+  PILLAR.firstSave = null;
+  savePillar();
+
+  toast('All data cleared. Bell reset to L1.');
+  renderHistory(); reflectBell();
+};
+').onclick=function(){
       lsSet('rise:history', []);
       setBell(1);
       lsDel('rise:current_session');
       toast('All data cleared. Bell reset to L1.');
       renderHistory(); reflectBell();
     };
-
     /* ===== Complete (auto pillar Q) ===== */
     var progDlg=(function(){ var el=$('#progModal'); return { open:function(){ if(el && el.showModal) el.showModal(); }, close:function(){ if(el && el.close) el.close(); } }; })();
     $('#btnComplete').onclick = function(){
@@ -1236,26 +1270,31 @@ $('#p3Timer').onclick = async function(){
         shouldAsk = (currentSession.part2||[]).some(function(it){ return it.name==='Military Press'; });
         if(shouldAsk) question = "Military Press • Weight Ladder (5 @ Heavy) — 5 solid reps per arm?";
       }
-      function saveAndToast(){
-        var hist=lsGet('rise:history', []);
-        hist.push({ saved_at: nowISO(), session: currentSession });
-        lsSet('rise:history', hist);
-        lsDel('rise:current_session');
-        toast('Session saved to history.');
-      }
-      if(shouldAsk){
-        $('#progQuestion').textContent=question;
-        progDlg.open();
-        $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
-        $('#progYes').onclick= function(){
-          if(question.indexOf('Rep Ladder')>-1){ PILLAR.passRL=true; PILLAR.lastRL=isoToday(); }
-          else { PILLAR.passWL=true; PILLAR.lastWL=isoToday(); }
-          savePillar(); tryPromoteGoldilocks();
-          progDlg.close(); saveAndToast();
-        };
-      } else saveAndToast();
-    };
+function saveAndToast(){
+  // NIEUW: eerste keer opslaan? Start 28-dagen klok vandaag.
+  if(!PILLAR.firstSave){
+    PILLAR.firstSave = isoToday();
+    savePillar();
+  }
 
+  var hist=lsGet('rise:history', []);
+  hist.push({ saved_at: nowISO(), session: currentSession });
+  lsSet('rise:history', hist);
+  lsDel('rise:current_session');
+  toast('Session saved to history.');
+}
+if(shouldAsk){
+  $('#progQuestion').textContent=question;
+  progDlg.open();
+  $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
+  $('#progYes').onclick= function(){
+    if(question.indexOf('Rep Ladder')>-1){ PILLAR.passRL=true; PILLAR.lastRL=isoToday(); }
+    else { PILLAR.passWL=true; PILLAR.lastWL=isoToday(); }
+    savePillar(); tryPromoteGoldilocks();
+    progDlg.close(); saveAndToast();
+  };
+} else saveAndToast();
+};
     /* ===== Recovery builders (tab) ===== */
     var KS1 = {
       "Roll to Press": ["Wrist Turns","Neck Rotations","Arm Bar","Diagonal Hip Stretch","Roll to Press Movement"],
@@ -1495,4 +1534,5 @@ function updateRecSummary(){
   </script>
 </body>
 </html>
+
 
