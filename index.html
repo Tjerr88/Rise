@@ -1435,13 +1435,12 @@ $('#btnComplete').onclick = function(){
       var lines=["Zone 2 — 30–45 min","","Conversational pace (talk test pass).","Pick one: brisk walk / bike / rower / light jog.","","Tips:","• Keep cadence steady, nasal breathing if possible.","• RPE ~4–5/10.","• Optional HR guide: ~70–80% of HRmax."];
       return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', gate:(+prefs.recSleep||0)+(+prefs.recEnergy||0)+(+prefs.recBody||0), recovery:{ main:lines, choice:'Zone 2' } };
     }
-    function buildRecoverySession(kind){
-      if(kind==='gfm') return buildGFMFlow();
-      if(kind==='ks')  return generateKSPlan();
-      if(kind==='zone2') return buildZone2();
-      return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', recovery:{ main:["Recovery"], choice:"Recovery"} };
-    }
-
+function buildRecoverySession(kind){
+  if(kind==='gfm') return buildGFMFlow();
+  if(kind==='ks')  { const s = generateKSPlan(); s.mode = 'ks'; return s; } // ← voeg toe
+  if(kind==='zone2') return buildZone2();
+  return { id:uuid(), program:'Rise', createdAt:nowISO(), mode:'recovery', recovery:{ main:["Recovery"], choice:"Recovery"} };
+}
     /* ===== Settings + toggles ===== */
     function renderSettings(){
       $('#s_pull').checked=!!prefs.pullupBar;
@@ -1583,6 +1582,7 @@ function updateRecSummary(){
   </script>
 </body>
 </html>
+
 
 
 
