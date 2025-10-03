@@ -1186,62 +1186,95 @@ $('#p3Timer').onclick = async function(){
     return;
   }
 };
-    /* ===== History ===== */
-    function renderHistory(){
-      var hist=lsGet('rise:history', []);
-      var host=$('#histList');
-      if(!hist.length){ host.innerHTML='<p class="text-sm muted">Empty.</p>'; return; }
-      host.innerHTML = hist.slice().reverse().map(function(h){
-        var s=h.session||{};
-        var f2=s.format && (s.format.label||s.format.meta) ? (s.format.label||s.format.meta) : '';
-        var f3='';
-        if(s.finisher && s.finisher.kind==='ballistic'){
-          var f=FIN_BALLISTIC_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
-          f3=f? f.label:'';
-        } else if (s.finisher && s.finisher.format){
-          var fc=CARRY_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
-          f3=fc? fc.label:'';
-        }
-        var mode = s.mode||'full';
-        return '<div class="py-2 border-b border-black/10 dark:border-white/10">'+
-          '<div class="text-sm"><strong>'+new Date(h.saved_at).toLocaleString()+'</strong> • '+mode+' • Bell L'+(s.bellLevel||bell)+'</div>'+
-          '<div class="text-xs mt-1">'+f2+((f2&&f3)?' — ':'')+f3+'</div>'+
-          (s.part2? '<div class="text-xs mt-1">'+s.part2.map(function(it){return it.pattern+': '+it.name;}).join(' • ')+'</div>':'' )+
-        '</div>';
-      }).join('');
+/* ===== History ===== */
+function renderHistory(){
+  var hist=lsGet('rise:history', []);
+  var host=$('#histList');
+  if(!hist.length){ host.innerHTML='<p class="text-sm muted">Empty.</p>'; return; }
+  host.innerHTML = hist.slice().reverse().map(function(h){
+    var s=h.session||{};
+    var f2=s.format && (s.format.label||s.format.meta) ? (s.format.label||s.format.meta) : '';
+    var f3='';
+    if(s.finisher && s.finisher.kind==='ballistic'){
+      var f=FIN_BALLISTIC_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
+      f3=f? f.label:'';
+    } else if (s.finisher && s.finisher.format){
+      var fc=CARRY_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
+      f3=fc? fc.label:'';
     }
-    function exportJSON(){ var hist=lsGet('rise:history', []); var blob=new Blob([JSON.stringify(hist,null,2)], {type:'application/json'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='rise-history.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
-    function toCSV(rows){
-      function esc(v){ v = (v==null?'':String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
-      var header=["saved_at","mode","bellLevel","format2","format3","part2"];
-      var out=[header.join(",")];
-      rows.forEach(function(h){
-        var s=h.session||{};
-        var f2=s.format && (s.format.label||s.format.meta) ? (s.format.label||s.format.meta) : '';
-        var f3='';
-        if(s.finisher && s.finisher.kind==='ballistic'){ var f=FIN_BALLISTIC_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0]; f3=f? f.label:''; }
-        else if (s.finisher && s.finisher.format){ var fc=CARRY_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0]; f3=fc? fc.label:''; }
-        out.push([
-          h.saved_at||"",
-          s.mode||"",
-          s.bellLevel||"",
-          f2,
-          f3,
-          (s.part2||[]).map(function(it){return it.pattern+': '+it.name;}).join(" | ")
-        ].map(esc).join(","));
-      });
-      return out.join("\n");
-    }
-    function exportCSV(){ var hist=lsGet('rise:history', []); var csv=toCSV(hist); var blob=new Blob([csv], {type:'text/csv'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
-$('#btnExportJSON').onclick=exportJSON;
-$('#btnExportCSV').onclick=exportCSV;
+    var mode = s.mode||'full';
+    return '<div class="py-2 border-b border-black/10 dark:border-white/10">'+
+      '<div class="text-sm"><strong>'+new Date(h.saved_at).toLocaleString()+'</strong> • '+mode+' • Bell L'+(s.bellLevel||bell)+'</div>'+
+      '<div class="text-xs mt-1">'+f2+((f2&&f3)?' — ':'')+f3+'</div>'+
+      (s.part2? '<div class="text-xs mt-1">'+s.part2.map(function(it){return it.pattern+': '+it.name;}).join(' • ')+'</div>':'' )+
+    '</div>';
+  }).join('');
+}
 
-$('#btnClearHist').onclick=function(){
+/* ===== History exports + Clear All ===== */
+function exportJSON(){
+  var hist = lsGet('rise:history', []);
+  var blob = new Blob([JSON.stringify(hist, null, 2)], { type: 'application/json' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url;
+  a.download = 'rise-history.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function toCSV(rows){
+  function esc(v){ v = (v==null?'':String(v)); return '"'+v.replace(/"/g,'""')+'"'; }
+  var header=["saved_at","mode","bellLevel","format2","format3","part2"];
+  var out=[header.join(",")];
+  rows.forEach(function(h){
+    var s=h.session||{};
+    var f2=s.format && (s.format.label||s.format.meta) ? (s.format.label||s.format.meta) : '';
+    var f3='';
+    if(s.finisher && s.finisher.kind==='ballistic'){
+      var f=FIN_BALLISTIC_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
+      f3=f? f.label:'';
+    } else if (s.finisher && s.finisher.format){
+      var fc=CARRY_FORMATS.filter(function(x){return x.id===(s.finisher.format && s.finisher.format.id);})[0];
+      f3=fc? fc.label:'';
+    }
+    out.push([
+      h.saved_at||"",
+      s.mode||"",
+      s.bellLevel||"",
+      f2,
+      f3,
+      (s.part2||[]).map(function(it){return it.pattern+': '+it.name;}).join(" | ")
+    ].map(esc).join(","));
+  });
+  return out.join("\n");
+}
+
+function exportCSV(){
+  var hist = lsGet('rise:history', []);
+  var csv  = toCSV(hist);
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url;
+  a.download = 'rise-history.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+$('#btnExportJSON').onclick = exportJSON;
+$('#btnExportCSV').onclick  = exportCSV;
+
+$('#btnClearHist').onclick = function(){
   lsSet('rise:history', []);
   setBell(1);
   lsDel('rise:current_session');
 
-  // NIEUW: pilaren + klok volledig resetten
+  // Reset pilaren + 28-dagen klok
   PILLAR.lastWL = null;
   PILLAR.lastRL = null;
   PILLAR.passWL = false;
@@ -1250,53 +1283,64 @@ $('#btnClearHist').onclick=function(){
   savePillar();
 
   toast('All data cleared. Bell reset to L1.');
-  renderHistory(); 
+  renderHistory();
   reflectBell();
 };
 
-').onclick=function(){
-      lsSet('rise:history', []);
-      setBell(1);
-      lsDel('rise:current_session');
-      toast('All data cleared. Bell reset to L1.');
-      renderHistory(); reflectBell();
-    };
-    /* ===== Complete (auto pillar Q) ===== */
-    var progDlg=(function(){ var el=$('#progModal'); return { open:function(){ if(el && el.showModal) el.showModal(); }, close:function(){ if(el && el.close) el.close(); } }; })();
-    $('#btnComplete').onclick = function(){
-      if(!currentSession){ toast('No session to complete.'); return; }
-      var shouldAsk=false, question='';
-      if(currentSession.format && currentSession.format.id==='repLadder'){
-        shouldAsk = (currentSession.part2||[]).some(function(it){ return it.name==='Military Press'; });
-        if(shouldAsk) question = "Military Press • Rep Ladder 1–2–3–4–5 — completed all rungs per arm?";
-      } else if (currentSession.format && currentSession.format.id==='weightLadder'){
-        shouldAsk = (currentSession.part2||[]).some(function(it){ return it.name==='Military Press'; });
-        if(shouldAsk) question = "Military Press • Weight Ladder (5 @ Heavy) — 5 solid reps per arm?";
-      }
-function saveAndToast(){
-  // NIEUW: eerste keer opslaan? Start 28-dagen klok vandaag.
-  if(!PILLAR.firstSave){
-    PILLAR.firstSave = isoToday();
-    savePillar();
+/* ===== Complete (auto pillar Q) ===== */
+var progDlg=(function(){ 
+  var el=$('#progModal'); 
+  return { 
+    open:function(){ if(el && el.showModal) el.showModal(); }, 
+    close:function(){ if(el && el.close) el.close(); } 
+  }; 
+})();
+
+$('#btnComplete').onclick = function(){
+  if(!currentSession){ toast('No session to complete.'); return; }
+
+  var shouldAsk=false, question='';
+  if(currentSession.format && currentSession.format.id==='repLadder'){
+    shouldAsk = (currentSession.part2||[]).some(function(it){ return it.name==='Military Press'; });
+    if(shouldAsk) question = "Military Press • Rep Ladder 1–2–3–4–5 — completed all rungs per arm?";
+  } else if (currentSession.format && currentSession.format.id==='weightLadder'){
+    shouldAsk = (currentSession.part2||[]).some(function(it){ return it.name==='Military Press'; });
+    if(shouldAsk) question = "Military Press • Weight Ladder (5 @ Heavy) — 5 solid reps per arm?";
   }
 
-  var hist=lsGet('rise:history', []);
-  hist.push({ saved_at: nowISO(), session: currentSession });
-  lsSet('rise:history', hist);
-  lsDel('rise:current_session');
-  toast('Session saved to history.');
-}
-if(shouldAsk){
-  $('#progQuestion').textContent=question;
-  progDlg.open();
-  $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
-  $('#progYes').onclick= function(){
-    if(question.indexOf('Rep Ladder')>-1){ PILLAR.passRL=true; PILLAR.lastRL=isoToday(); }
-    else { PILLAR.passWL=true; PILLAR.lastWL=isoToday(); }
-    savePillar(); tryPromoteGoldilocks();
-    progDlg.close(); saveAndToast();
-  };
-} else saveAndToast();
+  function saveAndToast(){
+    // Eerste keer opslaan? Start 28-dagen klok vandaag.
+    if(!PILLAR.firstSave){
+      PILLAR.firstSave = isoToday();
+      savePillar();
+    }
+    var hist=lsGet('rise:history', []);
+    hist.push({ saved_at: nowISO(), session: currentSession });
+    lsSet('rise:history', hist);
+    lsDel('rise:current_session');
+    toast('Session saved to history.');
+  }
+
+  if(shouldAsk){
+    $('#progQuestion').textContent=question;
+    progDlg.open();
+    $('#progNo').onclick = function(){ progDlg.close(); saveAndToast(); };
+    $('#progYes').onclick= function(){
+      if(question.indexOf('Rep Ladder')>-1){ 
+        PILLAR.passRL=true; 
+        PILLAR.lastRL=isoToday(); 
+      } else { 
+        PILLAR.passWL=true; 
+        PILLAR.lastWL=isoToday(); 
+      }
+      savePillar(); 
+      tryPromoteGoldilocks();
+      progDlg.close(); 
+      saveAndToast();
+    };
+  } else {
+    saveAndToast();
+  }
 };
     /* ===== Recovery builders (tab) ===== */
     var KS1 = {
@@ -1537,6 +1581,7 @@ function updateRecSummary(){
   </script>
 </body>
 </html>
+
 
 
 
