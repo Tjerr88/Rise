@@ -1235,7 +1235,7 @@ $('#p3Timer').onclick = async function(){
     function exportCSV(){ var hist=lsGet('rise:history', []); var csv=toCSV(hist); var blob=new Blob([csv], {type:'text/csv'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
     $('#btnExportJSON').onclick=exportJSON;
     $('#btnExportCSV').onclick=exportCSV;
-    $('$('#btnClearHist').onclick=function(){
+    $('#btnClearHist').onclick=function(){
   lsSet('rise:history', []);
   setBell(1);
   lsDel('rise:current_session');
@@ -1534,5 +1534,6 @@ function updateRecSummary(){
   </script>
 </body>
 </html>
+
 
 
