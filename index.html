@@ -1233,9 +1233,10 @@ $('#p3Timer').onclick = async function(){
       return out.join("\n");
     }
     function exportCSV(){ var hist=lsGet('rise:history', []); var csv=toCSV(hist); var blob=new Blob([csv], {type:'text/csv'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='rise-history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
-    $('#btnExportJSON').onclick=exportJSON;
-    $('#btnExportCSV').onclick=exportCSV;
-    $('#btnClearHist').onclick=function(){
+$('#btnExportJSON').onclick=exportJSON;
+$('#btnExportCSV').onclick=exportCSV;
+
+$('#btnClearHist').onclick=function(){
   lsSet('rise:history', []);
   setBell(1);
   lsDel('rise:current_session');
@@ -1249,8 +1250,10 @@ $('#p3Timer').onclick = async function(){
   savePillar();
 
   toast('All data cleared. Bell reset to L1.');
-  renderHistory(); reflectBell();
+  renderHistory(); 
+  reflectBell();
 };
+
 ').onclick=function(){
       lsSet('rise:history', []);
       setBell(1);
@@ -1534,6 +1537,7 @@ function updateRecSummary(){
   </script>
 </body>
 </html>
+
 
 
 
