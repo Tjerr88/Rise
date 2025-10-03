@@ -1168,12 +1168,14 @@ $('#p3Timer').onclick = async function(){
     }
 
     // Timed carry = continuous effort (geen vaste intervallen)
-    if (c && c.kind === 'timedCarry'){
-      beepStart();
-      HUD.show('Carry — continuous (max effort, no rest)', null);
-      return; // handmatig stoppen wanneer je wilt
-    }
-
+if (c && c.kind === 'timedCarry'){
+  var stepsC = [
+    { label: 'Carry — continuous (max effort, no rest)', ms: 10*60*1000, onStart: function(){ beepStart(); } },
+    { label: 'Done', ms: 300, onStart: function(){ beepEnd(); } }
+  ];
+  stopRef = runSchedule(stepsC, { onTick: (ms,s)=>HUD.show(s.label, Math.ceil(ms/1000)), onDone: stopAll });
+  return;
+}
     // Standaard carry: 10 minuten max afstand
     var stepsC = [
       { label: fin.exercise + ' — Max meters (10\')', ms: 10*60*1000, onStart: function(){ beepStart(); } },
@@ -1581,6 +1583,7 @@ function updateRecSummary(){
   </script>
 </body>
 </html>
+
 
 
 
